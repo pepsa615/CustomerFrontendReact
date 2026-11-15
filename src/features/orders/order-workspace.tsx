@@ -60,14 +60,30 @@ export function OrderWorkspace() {
   const client = useQueryClient();
   const [intent] = useState(() => consumeOrderIntent());
   const [creating, setCreating] = useState(Boolean(intent));
-  const [input, setInput] = useState<QuoteInput>(() => intent ? {
-    ...initial,
-    deliveryType: intent.deliveryType,
-    pickup: { ...initial.pickup, ...intent.pickup, contact: { ...initial.pickup.contact, ...intent.pickup.contact } },
-    delivery: { ...initial.delivery, ...intent.delivery, contact: { ...initial.delivery.contact, ...intent.delivery.contact } },
-    parcel: { ...initial.parcel, ...intent.parcel },
-  } : initial);
+  const [input, setInput] = useState<QuoteInput>(() =>
+    intent
+      ? {
+          ...initial,
+          deliveryType: intent.deliveryType,
+          pickup: {
+            ...initial.pickup,
+            ...intent.pickup,
+            contact: { ...initial.pickup.contact, ...intent.pickup.contact },
+          },
+          delivery: {
+            ...initial.delivery,
+            ...intent.delivery,
+            contact: {
+              ...initial.delivery.contact,
+              ...intent.delivery.contact,
+            },
+          },
+          parcel: { ...initial.parcel, ...intent.parcel },
+        }
+      : initial,
+  );
   const [quote, setQuote] = useState<Order>();
+  const [step, setStep] = useState(0);
   const [pin, setPin] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -160,6 +176,19 @@ export function OrderWorkspace() {
     } finally {
       setBusy(false);
     }
+  }
+  function canContinue() {
+    const place = step === 0 ? input.pickup : input.delivery;
+    if (step < 2) {
+      return Boolean(
+        place.address.trim() &&
+        place.city.trim() &&
+        place.state.trim() &&
+        place.contact.name.trim() &&
+        place.contact.phone.trim(),
+      );
+    }
+    return true;
   }
   async function pay() {
     if (!quote) return;
@@ -259,76 +288,129 @@ export function OrderWorkspace() {
               void createQuote();
             }}
           >
-            {addressFields('pickup', 'Pickup details')}
-            {addressFields('delivery', 'Delivery details')}
-            <Card>
-              <h2 className="text-lg font-bold">Item information</h2>
-              <div className="mt-4 grid gap-4 md:grid-cols-2">
-                <FormField label="Delivery type">
-                  <Select
-                    value={input.deliveryType}
-                    onChange={(e) =>
-                      setInput({ ...input, deliveryType: e.target.value })
-                    }
-                  >
-                    <option value="last_mile">Last-mile delivery</option>
-                    <option value="interstate">Interstate delivery</option>
-                  </Select>
-                </FormField>
-                <FormField label="Vehicle">
-                  <Select
-                    value={input.mobilityMethod}
-                    onChange={(e) =>
-                      setInput({ ...input, mobilityMethod: e.target.value })
-                    }
-                  >
-                    <option value="motorcycle">Motorcycle</option>
-                    <option value="tricycle">Tricycle</option>
-                    <option value="car">Car</option>
-                    <option value="van">Van</option>
-                  </Select>
-                </FormField>
-                <FormField label="Category">
-                  <Select
-                    value={input.parcel.category}
-                    onChange={(e) =>
-                      setInput({
-                        ...input,
-                        parcel: { ...input.parcel, category: e.target.value },
-                      })
-                    }
-                  >
-                    <option>Mail and Small Parcel</option>
-                    <option>Food and Essentials</option>
-                    <option>Pharmaceutical Items</option>
-                    <option>Electronics and Gadgets</option>
-                    <option>Large Items and Others</option>
-                  </Select>
-                </FormField>
-                <FormField label="Description">
-                  <Textarea
-                    value={input.parcel.description}
-                    onChange={(e) =>
-                      setInput({
-                        ...input,
-                        parcel: {
-                          ...input.parcel,
-                          description: e.target.value,
-                        },
-                      })
-                    }
-                  />
-                </FormField>
+            <Card className="flex items-center justify-between gap-4 sm:flex-row">
+              <div>
+                <p className="text-sm font-semibold text-primary">
+                  Step {step + 1} of 3
+                </p>
+                <h1 className="text-xl font-bold">
+                  {
+                    ['Pickup details', 'Delivery details', 'Parcel details'][
+                      step
+                    ]
+                  }
+                </h1>
               </div>
-              <div className="mt-5 flex gap-3">
-                <Button variant="secondary" onClick={() => setCreating(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" loading={busy}>
-                  Review quote
-                </Button>
+              <div className="flex gap-2" aria-label="Delivery form progress">
+                {[0, 1, 2].map((item) => (
+                  <span
+                    key={item}
+                    className={`h-2 w-12 rounded-full ${item <= step ? 'bg-primary' : 'bg-surface-muted'}`}
+                  />
+                ))}
               </div>
             </Card>
+            {step === 0
+              ? addressFields('pickup', 'Where should we pick up?')
+              : null}
+            {step === 1
+              ? addressFields('delivery', 'Where should we deliver?')
+              : null}
+            {step === 2 ? (
+              <Card>
+                <h2 className="text-lg font-bold">Item information</h2>
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  <FormField label="Delivery type">
+                    <Select
+                      value={input.deliveryType}
+                      onChange={(e) =>
+                        setInput({ ...input, deliveryType: e.target.value })
+                      }
+                    >
+                      <option value="last_mile">Last-mile delivery</option>
+                      <option value="interstate">Interstate delivery</option>
+                    </Select>
+                  </FormField>
+                  <FormField label="Vehicle">
+                    <Select
+                      value={input.mobilityMethod}
+                      onChange={(e) =>
+                        setInput({ ...input, mobilityMethod: e.target.value })
+                      }
+                    >
+                      <option value="motorcycle">Motorcycle</option>
+                      <option value="tricycle">Tricycle</option>
+                      <option value="car">Car</option>
+                      <option value="van">Van</option>
+                    </Select>
+                  </FormField>
+                  <FormField label="Category">
+                    <Select
+                      value={input.parcel.category}
+                      onChange={(e) =>
+                        setInput({
+                          ...input,
+                          parcel: { ...input.parcel, category: e.target.value },
+                        })
+                      }
+                    >
+                      <option>Mail and Small Parcel</option>
+                      <option>Food and Essentials</option>
+                      <option>Pharmaceutical Items</option>
+                      <option>Electronics and Gadgets</option>
+                      <option>Large Items and Others</option>
+                    </Select>
+                  </FormField>
+                  <FormField label="Description">
+                    <Textarea
+                      value={input.parcel.description}
+                      onChange={(e) =>
+                        setInput({
+                          ...input,
+                          parcel: {
+                            ...input.parcel,
+                            description: e.target.value,
+                          },
+                        })
+                      }
+                    />
+                  </FormField>
+                </div>
+                <div className="mt-5 flex gap-3">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => setStep(1)}
+                  >
+                    Back
+                  </Button>
+                  <Button type="submit" loading={busy}>
+                    Review quote
+                  </Button>
+                </div>
+              </Card>
+            ) : null}
+            {step < 2 ? (
+              <div className="flex gap-3">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    if (step === 0) setCreating(false);
+                    else setStep(step - 1);
+                  }}
+                >
+                  {step === 0 ? 'Cancel' : 'Back'}
+                </Button>
+                <Button
+                  type="button"
+                  disabled={!canContinue()}
+                  onClick={() => setStep(step + 1)}
+                >
+                  Continue
+                </Button>
+              </div>
+            ) : null}
           </form>
         )}
       </div>

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Link } from 'react-router-dom';
 import {
   ArrowDownLeft,
   Cable,
@@ -298,6 +299,11 @@ function PaymentDialog({
     queryFn: () => walletApi.beneficiaries(token),
     enabled: action === 'transfer',
   });
+  const banks = useQuery({
+    queryKey: ['wallet-banks'],
+    queryFn: () => walletApi.banks(token),
+    enabled: action === 'transfer' && scope === 'external',
+  });
   const plans = useQuery({
     queryKey: ['vas-plans', phone],
     queryFn: () => walletApi.plans(token, phone),
@@ -453,16 +459,42 @@ function PaymentDialog({
           </div>
         ) : null}
         {isTransfer && scope === 'external' ? (
-          <FormField label="Bank code">
-            <Input
+          <FormField label="Bank">
+            <Select
               required
               value={bankCode}
               onChange={(e) => {
                 setBankCode(e.target.value);
+                const bank = banks.data?.find(
+                  (item) =>
+                    (item.attributes?.nipCode ?? item.code ?? item.id) ===
+                    e.target.value,
+                );
+                setBankName(bank?.attributes?.name ?? bank?.name ?? '');
                 setAccountName('');
               }}
-              placeholder="Bank code"
-            />
+            >
+              <option value="">
+                {banks.isLoading ? 'Loading banks…' : 'Select a bank'}
+              </option>
+              {banks.data
+                ?.map((bank) => ({
+                  code: bank.attributes?.nipCode ?? bank.code ?? bank.id ?? '',
+                  name: bank.attributes?.name ?? bank.name ?? '',
+                }))
+                .filter((bank) => bank.code && bank.name)
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map((bank) => (
+                  <option key={`${bank.code}-${bank.name}`} value={bank.code}>
+                    {bank.name}
+                  </option>
+                ))}
+            </Select>
+            {banks.isError ? (
+              <small className="text-danger">
+                Could not load banks. Retry by reopening transfer.
+              </small>
+            ) : null}
           </FormField>
         ) : null}
         {isTransfer ? (
@@ -604,6 +636,15 @@ function PaymentDialog({
             onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
           />
         </FormField>
+        <p className="text-sm text-muted">
+          New to payments?{' '}
+          <Link
+            className="font-semibold text-primary underline"
+            to="/app/transaction-security"
+          >
+            Set up your transaction PIN
+          </Link>
+        </p>
         {isTransfer ? (
           <label className="flex items-center gap-3 text-sm">
             <Checkbox
