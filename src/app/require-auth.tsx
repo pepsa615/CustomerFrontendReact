@@ -15,7 +15,7 @@ export function RequireAuth({ children }: { children: ReactNode }) {
     );
   if (!session)
     return <Navigate to="/auth/login" replace state={{ from: location }} />;
-  if (session && session.user.onboardingStatus !== 'COMPLETE')
-    return <Navigate to="/auth/onboarding" replace />;
+  if (session && !session.user.emailVerified)
+    return <Navigate to="/auth/verify-email" replace />;
   return children;
 }

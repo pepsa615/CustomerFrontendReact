@@ -7,7 +7,9 @@ import { RequireAuth } from './require-auth';
 import { hasOrderIntent } from '../features/orders/order-intent';
 
 function EntryRoute() {
-  return <Navigate to={hasOrderIntent() ? '/app/orders' : '/auth/login'} replace />;
+  return (
+    <Navigate to={hasOrderIntent() ? '/app/orders' : '/auth/login'} replace />
+  );
 }
 
 export const router = createBrowserRouter([
@@ -53,6 +55,11 @@ export const router = createBrowserRouter([
         path: 'security/transaction',
         lazy: () => import('../pages/transaction-setup-page'),
       },
+      {
+        path: 'transaction-security',
+        element: <Navigate to="/app/security/transaction" replace />,
+      },
+      { path: 'kyc', lazy: () => import('../pages/onboarding-page') },
       {
         path: 'security/sessions',
         lazy: () => import('../pages/sessions-page'),

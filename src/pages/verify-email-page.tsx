@@ -37,7 +37,7 @@ export function Component() {
       });
       setSession({ user: data.user, accessToken: data.accessToken });
       sessionStorage.removeItem('pepsa.registration-token');
-      navigate('/auth/onboarding');
+      navigate('/app');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Verification failed');
     } finally {

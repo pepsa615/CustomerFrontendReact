@@ -22,7 +22,11 @@ type Session = { user: IdentityUser; accessToken: string } | null;
 type AuthContextValue = {
   session: Session;
   setSession: (session: Session) => void;
-  login: (identifier: string, password: string) => Promise<IdentityUser>;
+  login: (
+    identifier: string,
+    password: string,
+    rememberMe: boolean,
+  ) => Promise<IdentityUser>;
   logout: () => Promise<void>;
   isBootstrapping: boolean;
 };
@@ -31,10 +35,12 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session>(null);
   const [isBootstrapping, setBootstrapping] = useState(true);
-  const login = useCallback(async (identifier: string, password: string) => {
-    const data = await apiRequest<{ user: IdentityUser; accessToken: string }>(
-      '/auth/login',
-      {
+  const login = useCallback(
+    async (identifier: string, password: string, rememberMe: boolean) => {
+      const data = await apiRequest<{
+        user: IdentityUser;
+        accessToken: string;
+      }>('/auth/login', {
         method: 'POST',
         body: JSON.stringify({
           identifier,
@@ -42,23 +48,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           sessionTransport: 'cookie',
           platform: 'web',
           deviceName: navigator.userAgent.slice(0, 100),
+          rememberMe,
         }),
-      },
-    );
-    setSession({ user: data.user, accessToken: data.accessToken });
-    return data.user;
-  }, []);
+      });
+      setSession({ user: data.user, accessToken: data.accessToken });
+      if (rememberMe) localStorage.setItem('pepsa.remember-me', 'true');
+      else localStorage.removeItem('pepsa.remember-me');
+      return data.user;
+    },
+    [],
+  );
   const logout = useCallback(async () => {
     await apiRequest('/auth/logout', {
       method: 'POST',
       body: JSON.stringify({ sessionTransport: 'cookie' }),
     }).catch(() => undefined);
     setSession(null);
+    localStorage.removeItem('pepsa.remember-me');
   }, []);
   useEffect(() => {
     apiRequest<{ accessToken: string }>('/auth/refresh-token', {
       method: 'POST',
-      body: JSON.stringify({ sessionTransport: 'cookie' }),
+      body: JSON.stringify({
+        sessionTransport: 'cookie',
+        rememberMe: localStorage.getItem('pepsa.remember-me') === 'true',
+      }),
     })
       .then(async ({ accessToken }) => {
         const user = await apiRequest<IdentityUser>('/auth/me', {

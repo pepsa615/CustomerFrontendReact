@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Alert,
   Button,
@@ -12,7 +13,10 @@ import { apiRequest } from '../api/client';
 import { useAuth } from '../contexts/auth-context';
 export function Component() {
   const { session } = useAuth();
-  const [step, setStep] = useState<'phone' | 'otp' | 'pin'>('phone');
+  const navigate = useNavigate();
+  const [step, setStep] = useState<'phone' | 'otp' | 'pin'>(
+    session?.user.phoneVerified ? 'pin' : 'phone',
+  );
   const [phone, setPhone] = useState(session?.user.phone ?? '');
   const [code, setCode] = useState('');
   const [message, setMessage] = useState('');
@@ -46,6 +50,7 @@ export function Component() {
           }),
         });
         setMessage('Transaction setup complete.');
+        window.setTimeout(() => navigate('/app/wallet'), 700);
       }
     } catch (cause) {
       setMessage(cause instanceof Error ? cause.message : 'Could not continue');

@@ -107,7 +107,6 @@ export function Component() {
               </option>
               <option value="FEMALE">Female</option>
               <option value="MALE">Male</option>
-              <option value="OTHER">Other</option>
             </Select>
           </FormField>
         </div>

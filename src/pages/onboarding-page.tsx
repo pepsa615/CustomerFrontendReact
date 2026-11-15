@@ -4,7 +4,6 @@ import { Alert, Button, FormField, Input } from '../components/ui';
 import { AuthCard } from '../features/identity/auth-card';
 import { apiRequest } from '../api/client';
 import { useAuth, type IdentityUser } from '../contexts/auth-context';
-import { postAuthDestination } from '../features/orders/order-intent';
 type CapturedLocation = {
   latitude: number;
   longitude: number;
@@ -62,9 +61,7 @@ export function Component() {
           const camera = devices.find((device) => device.kind === 'videoinput');
           stream = await navigator.mediaDevices.getUserMedia({
             audio: false,
-            video: camera
-              ? { deviceId: { exact: camera.deviceId } }
-              : true,
+            video: camera ? { deviceId: { exact: camera.deviceId } } : true,
           });
         } else {
           throw cause;
@@ -198,7 +195,9 @@ export function Component() {
         timestamp: Date.now(),
       });
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Location lookup failed');
+      setError(
+        cause instanceof Error ? cause.message : 'Location lookup failed',
+      );
     } finally {
       setLocating(false);
     }
@@ -224,7 +223,7 @@ export function Component() {
         },
       );
       setSession({ ...session, user: data.user });
-      navigate(postAuthDestination());
+      navigate('/app/wallet');
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Onboarding failed');
     } finally {
@@ -233,8 +232,8 @@ export function Component() {
   }
   return (
     <AuthCard
-      title="Finish identity setup"
-      description="Take a clear selfie and share your current location. PEPSA stores this privately and never performs facial recognition."
+      title="Verify your identity"
+      description="A one-time security check is required before your first transfer or bill payment. It takes about two minutes."
     >
       <div className="grid gap-5">
         {error ? <Alert tone="danger">{error}</Alert> : null}
@@ -320,8 +319,7 @@ export function Component() {
         ) : null}
         {location ? (
           <Alert tone="success">
-            Location captured with ±{Math.round(location.accuracy)}m
-            accuracy.
+            Location captured with ±{Math.round(location.accuracy)}m accuracy.
           </Alert>
         ) : null}
         <Button
@@ -329,7 +327,7 @@ export function Component() {
           disabled={!selfie || !location || !session}
           onClick={submit}
         >
-          Complete setup
+          Complete verification
         </Button>
       </div>
     </AuthCard>

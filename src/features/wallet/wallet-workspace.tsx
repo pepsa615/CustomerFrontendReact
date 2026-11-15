@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   ArrowDownLeft,
   Cable,
@@ -54,6 +54,7 @@ function label(value: string) {
 }
 
 export function WalletWorkspace() {
+  const navigate = useNavigate();
   const { session } = useAuth();
   const token = session?.accessToken ?? '';
   const client = useQueryClient();
@@ -71,6 +72,25 @@ export function WalletWorkspace() {
     queryFn: () => walletApi.transactions(token, search),
     enabled: Boolean(token),
   });
+  const readiness = useQuery({
+    queryKey: ['transaction-readiness'],
+    queryFn: () => walletApi.readiness(token),
+    enabled: Boolean(token),
+  });
+  const beginPayment = (id: Exclude<Action, null>) => {
+    if (readiness.data && !readiness.data.kycComplete) {
+      navigate('/app/kyc');
+      return;
+    }
+    if (
+      readiness.data &&
+      (!readiness.data.phoneVerified || !readiness.data.pinSet)
+    ) {
+      navigate('/app/security/transaction');
+      return;
+    }
+    setAction(id);
+  };
   const refresh = () => {
     void client.invalidateQueries({ queryKey: ['wallet'] });
     void client.invalidateQueries({ queryKey: ['wallet-transactions'] });
@@ -149,7 +169,7 @@ export function WalletWorkspace() {
           {actionItems.map(({ id, label: text, icon: Icon }) => (
             <button
               key={id}
-              onClick={() => setAction(id)}
+              onClick={() => beginPayment(id)}
               className="rounded-2xl border bg-surface p-4 text-left transition hover:border-primary hover:bg-primary-soft"
             >
               <Icon className="text-primary" />
@@ -640,7 +660,7 @@ function PaymentDialog({
           New to payments?{' '}
           <Link
             className="font-semibold text-primary underline"
-            to="/app/transaction-security"
+            to="/app/security/transaction"
           >
             Set up your transaction PIN
           </Link>

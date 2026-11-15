@@ -25,12 +25,8 @@ export function Component() {
     setLoading(true);
     setError('');
     try {
-      const user = await login(identifier, password);
-      navigate(
-        user.onboardingStatus === 'COMPLETE'
-          ? postAuthDestination()
-          : '/auth/onboarding',
-      );
+      await login(identifier, password, remember);
+      navigate(postAuthDestination());
     } catch (cause) {
       const apiError = cause as ApiError;
       if (apiError.code === 'EMAIL_VERIFICATION_REQUIRED') {
