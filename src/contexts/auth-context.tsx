@@ -41,7 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           password,
           sessionTransport: 'cookie',
           platform: 'web',
-          deviceName: navigator.userAgent,
+          deviceName: navigator.userAgent.slice(0, 100),
         }),
       },
     );

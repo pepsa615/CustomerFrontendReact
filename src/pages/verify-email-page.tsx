@@ -31,7 +31,7 @@ export function Component() {
           registrationToken,
           code: submittedCode,
           sessionTransport: 'cookie',
-          deviceName: navigator.userAgent,
+          deviceName: navigator.userAgent.slice(0, 100),
           platform: 'web',
         }),
       });
