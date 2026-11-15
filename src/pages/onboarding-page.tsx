@@ -174,29 +174,34 @@ export function Component() {
       setLocating(false);
     }
   }
-  function useManualLocation(event: React.FormEvent<HTMLFormElement>) {
+  async function resolveAddress(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const data = new FormData(event.currentTarget);
-    const latitude = Number(data.get('latitude'));
-    const longitude = Number(data.get('longitude'));
-    if (
-      !Number.isFinite(latitude) ||
-      !Number.isFinite(longitude) ||
-      latitude < -90 ||
-      latitude > 90 ||
-      longitude < -180 ||
-      longitude > 180
-    ) {
-      setError('Enter valid latitude and longitude coordinates.');
-      return;
-    }
-    setLocation({
-      latitude,
-      longitude,
-      accuracy: 5000,
-      timestamp: Date.now(),
-    });
+    const address = String(data.get('address') ?? '').trim();
+    if (!session || address.length < 5) return;
+    setLocating(true);
     setError('');
+    try {
+      const result = await apiRequest<{
+        latitude: number;
+        longitude: number;
+        accuracyMeters: number;
+      }>('/account/onboarding/location', {
+        method: 'POST',
+        headers: { authorization: `Bearer ${session.accessToken}` },
+        body: JSON.stringify({ address }),
+      });
+      setLocation({
+        latitude: result.latitude,
+        longitude: result.longitude,
+        accuracy: result.accuracyMeters,
+        timestamp: Date.now(),
+      });
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Location lookup failed');
+    } finally {
+      setLocating(false);
+    }
   }
   async function submit() {
     if (!selfie || !location || !session) return;
@@ -294,22 +299,22 @@ export function Component() {
           Use current location
         </Button>
         {showManualLocation && !location ? (
-          <form className="grid gap-3" onSubmit={useManualLocation}>
+          <form className="grid gap-3" onSubmit={resolveAddress}>
             <Alert>
-              Automatic location is unavailable. In Apple Maps or Google Maps,
-              select your current position, copy its coordinates, and enter them
-              below.
+              Automatic location is unavailable. Enter your current street
+              address and PEPSA will securely resolve it through Google Maps.
             </Alert>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <FormField label="Latitude">
-                <Input name="latitude" inputMode="decimal" required />
-              </FormField>
-              <FormField label="Longitude">
-                <Input name="longitude" inputMode="decimal" required />
-              </FormField>
-            </div>
-            <Button type="submit" variant="secondary">
-              Use entered coordinates
+            <FormField label="Current address">
+              <Input
+                name="address"
+                autoComplete="street-address"
+                placeholder="Street, city, state, country"
+                minLength={5}
+                required
+              />
+            </FormField>
+            <Button type="submit" variant="secondary" loading={locating}>
+              Find my location
             </Button>
           </form>
         ) : null}
