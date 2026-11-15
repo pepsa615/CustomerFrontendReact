@@ -13,6 +13,7 @@ import {
 import { NavLink, Outlet } from 'react-router-dom';
 import { useTheme } from '../contexts/theme-context';
 import { cn } from '../utils/cn';
+import { Brand } from '../components/shared/brand';
 
 const links = [
   { to: '/app', label: 'Overview', icon: Home, end: true },
@@ -37,7 +38,7 @@ export function AppLayout() {
     <div className="min-h-dvh overflow-x-hidden bg-background lg:grid lg:grid-cols-[16rem_1fr]">
       <aside className="hidden border-r bg-surface p-4 lg:block lg:min-h-dvh">
         <div className="mb-5 flex items-center justify-between">
-          <span className="text-xl font-black text-primary">PEPSA</span>
+          <Brand className="text-xl" />
           <button
             className="rounded-lg p-2 hover:bg-surface-muted"
             aria-label="Toggle theme"
@@ -68,7 +69,7 @@ export function AppLayout() {
       </aside>
       <div className="min-w-0 pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0">
         <header className="sticky top-0 z-30 flex min-h-16 items-center justify-between border-b bg-surface/95 px-5 backdrop-blur lg:hidden">
-          <span className="text-xl font-black text-primary">PEPSA</span>
+          <Brand className="text-xl" />
           <button
             className="grid size-11 place-items-center rounded-xl hover:bg-surface-muted"
             aria-label="Toggle theme"
