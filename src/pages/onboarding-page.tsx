@@ -1,17 +1,28 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Alert, Button, FormField, Input } from '../components/ui';
 import { AuthCard } from '../features/identity/auth-card';
 import { apiRequest } from '../api/client';
 import { useAuth, type IdentityUser } from '../contexts/auth-context';
 import { postAuthDestination } from '../features/orders/order-intent';
+type CapturedLocation = {
+  latitude: number;
+  longitude: number;
+  accuracy: number;
+  timestamp: number;
+};
 export function Component() {
   const { session, setSession } = useAuth();
   const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const [selfie, setSelfie] = useState<File | null>(null);
-  const [location, setLocation] = useState<GeolocationPosition | null>(null);
+  const selfiePreview = useMemo(
+    () => (selfie ? URL.createObjectURL(selfie) : ''),
+    [selfie],
+  );
+  const [location, setLocation] = useState<CapturedLocation | null>(null);
+  const [showManualLocation, setShowManualLocation] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState('');
@@ -19,6 +30,12 @@ export function Component() {
   useEffect(
     () => () => streamRef.current?.getTracks().forEach((track) => track.stop()),
     [],
+  );
+  useEffect(
+    () => () => {
+      if (selfiePreview) URL.revokeObjectURL(selfiePreview);
+    },
+    [selfiePreview],
   );
   async function enableCamera() {
     setError('');
@@ -93,6 +110,9 @@ export function Component() {
           return;
         }
         setSelfie(new File([blob], 'selfie.jpg', { type: 'image/jpeg' }));
+        streamRef.current?.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+        setCameraReady(false);
         setError('');
       },
       'image/jpeg',
@@ -136,7 +156,12 @@ export function Component() {
       });
     try {
       const position = await waitForPosition();
-      setLocation(position);
+      setLocation({
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        accuracy: position.coords.accuracy,
+        timestamp: position.timestamp,
+      });
     } catch (cause) {
       const denied = errorCode(cause) === 1;
       setError(
@@ -144,9 +169,34 @@ export function Component() {
           ? 'Location access is blocked for this website. Allow Location for customer.pepsa.co in your browser site settings, then try again.'
           : 'macOS could not determine your location. Turn on Wi-Fi (it may remain disconnected), keep Location Services enabled for this browser, and try again.',
       );
+      setShowManualLocation(true);
     } finally {
       setLocating(false);
     }
+  }
+  function useManualLocation(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const data = new FormData(event.currentTarget);
+    const latitude = Number(data.get('latitude'));
+    const longitude = Number(data.get('longitude'));
+    if (
+      !Number.isFinite(latitude) ||
+      !Number.isFinite(longitude) ||
+      latitude < -90 ||
+      latitude > 90 ||
+      longitude < -180 ||
+      longitude > 180
+    ) {
+      setError('Enter valid latitude and longitude coordinates.');
+      return;
+    }
+    setLocation({
+      latitude,
+      longitude,
+      accuracy: 5000,
+      timestamp: Date.now(),
+    });
+    setError('');
   }
   async function submit() {
     if (!selfie || !location || !session) return;
@@ -155,9 +205,9 @@ export function Component() {
     try {
       const body = new FormData();
       body.set('selfie', selfie);
-      body.set('latitude', String(location.coords.latitude));
-      body.set('longitude', String(location.coords.longitude));
-      body.set('accuracyMeters', String(location.coords.accuracy));
+      body.set('latitude', String(location.latitude));
+      body.set('longitude', String(location.longitude));
+      body.set('accuracyMeters', String(location.accuracy));
       body.set('capturedAt', new Date(location.timestamp).toISOString());
       body.set('consent', 'true');
       const data = await apiRequest<{ user: IdentityUser }>(
@@ -183,26 +233,58 @@ export function Component() {
     >
       <div className="grid gap-5">
         {error ? <Alert tone="danger">{error}</Alert> : null}
-        <video
-          ref={videoRef}
-          muted
-          playsInline
-          className="aspect-[4/3] w-full rounded-2xl bg-surface-muted object-cover"
-        />
-        <div className="grid gap-3 sm:grid-cols-2">
-          <Button variant="secondary" onClick={enableCamera}>
-            Enable camera
+        {selfiePreview ? (
+          <img
+            src={selfiePreview}
+            alt="Captured selfie preview"
+            className="aspect-[4/3] w-full rounded-2xl bg-surface-muted object-cover"
+          />
+        ) : (
+          <video
+            ref={videoRef}
+            muted
+            playsInline
+            className="aspect-[4/3] w-full rounded-2xl bg-surface-muted object-cover"
+          />
+        )}
+        {selfie ? (
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setSelfie(null);
+              window.setTimeout(() => void enableCamera(), 0);
+            }}
+          >
+            Retake selfie
           </Button>
-          <Button variant="secondary" disabled={!cameraReady} onClick={capture}>
-            Capture selfie
-          </Button>
-        </div>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Button variant="secondary" onClick={enableCamera}>
+              Enable camera
+            </Button>
+            <Button
+              variant="secondary"
+              disabled={!cameraReady}
+              onClick={capture}
+            >
+              Capture selfie
+            </Button>
+          </div>
+        )}
         <FormField label="Or choose a selfie image">
           <Input
             type="file"
             accept="image/jpeg,image/png,image/webp"
             capture="user"
-            onChange={(event) => setSelfie(event.target.files?.[0] ?? null)}
+            onChange={(event) => {
+              const file = event.target.files?.[0] ?? null;
+              setSelfie(file);
+              if (file) {
+                streamRef.current?.getTracks().forEach((track) => track.stop());
+                streamRef.current = null;
+                setCameraReady(false);
+              }
+            }}
           />
         </FormField>
         {selfie ? (
@@ -211,9 +293,29 @@ export function Component() {
         <Button variant="secondary" loading={locating} onClick={locate}>
           Use current location
         </Button>
+        {showManualLocation && !location ? (
+          <form className="grid gap-3" onSubmit={useManualLocation}>
+            <Alert>
+              Automatic location is unavailable. In Apple Maps or Google Maps,
+              select your current position, copy its coordinates, and enter them
+              below.
+            </Alert>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <FormField label="Latitude">
+                <Input name="latitude" inputMode="decimal" required />
+              </FormField>
+              <FormField label="Longitude">
+                <Input name="longitude" inputMode="decimal" required />
+              </FormField>
+            </div>
+            <Button type="submit" variant="secondary">
+              Use entered coordinates
+            </Button>
+          </form>
+        ) : null}
         {location ? (
           <Alert tone="success">
-            Location captured with ±{Math.round(location.coords.accuracy)}m
+            Location captured with ±{Math.round(location.accuracy)}m
             accuracy.
           </Alert>
         ) : null}
