@@ -184,6 +184,7 @@ export function OtpInput({
 }) {
   return (
     <Input
+      name="code"
       aria-label={label}
       inputMode="numeric"
       autoComplete="one-time-code"

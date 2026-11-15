@@ -14,6 +14,11 @@ export function Component() {
     sessionStorage.getItem('pepsa.registration-token') ?? '';
   async function verify(event: React.FormEvent) {
     event.preventDefault();
+    const submittedCode = String(
+      new FormData(event.currentTarget as HTMLFormElement).get('code') ?? code,
+    )
+      .replace(/\D/g, '')
+      .slice(0, 6);
     setLoading(true);
     setError('');
     try {
@@ -24,7 +29,7 @@ export function Component() {
         method: 'POST',
         body: JSON.stringify({
           registrationToken,
-          code,
+          code: submittedCode,
           sessionTransport: 'cookie',
           deviceName: navigator.userAgent,
           platform: 'web',
