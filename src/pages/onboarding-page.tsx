@@ -37,13 +37,17 @@ export function Component() {
           video: { facingMode: { ideal: 'user' } },
         });
       } catch (cause) {
-        if (
+        const denied =
           cause instanceof DOMException &&
-          ['OverconstrainedError', 'NotFoundError'].includes(cause.name)
-        ) {
+          ['NotAllowedError', 'SecurityError'].includes(cause.name);
+        if (!denied) {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const camera = devices.find((device) => device.kind === 'videoinput');
           stream = await navigator.mediaDevices.getUserMedia({
             audio: false,
-            video: true,
+            video: camera
+              ? { deviceId: { exact: camera.deviceId } }
+              : true,
           });
         } else {
           throw cause;
@@ -60,10 +64,15 @@ export function Component() {
       const denied =
         cause instanceof DOMException &&
         ['NotAllowedError', 'SecurityError'].includes(cause.name);
+      const unavailable =
+        cause instanceof DOMException &&
+        ['NotFoundError', 'DevicesNotFoundError'].includes(cause.name);
       setError(
         denied
           ? 'Camera access is blocked for this website. Allow Camera for customer.pepsa.co in your browser site settings, then try again.'
-          : 'The camera could not be started. Close other apps using it, then retry or choose a selfie image.',
+          : unavailable
+            ? 'No camera was detected by the browser. Reconnect the camera or choose a selfie image.'
+            : 'The camera is available but macOS could not open it. Fully quit and reopen the browser after granting Camera access, then retry or choose a selfie image.',
       );
     }
   }
@@ -97,36 +106,43 @@ export function Component() {
       return;
     }
     setLocating(true);
-    const request = (options: PositionOptions) =>
-      new Promise<GeolocationPosition>((resolve, reject) =>
-        navigator.geolocation.getCurrentPosition(resolve, reject, options),
-      );
+    const errorCode = (cause: unknown) =>
+      typeof cause === 'object' && cause !== null && 'code' in cause
+        ? Number((cause as { code: unknown }).code)
+        : 0;
+    const waitForPosition = () =>
+      new Promise<GeolocationPosition>((resolve, reject) => {
+        let lastError: unknown;
+        const watchId = navigator.geolocation.watchPosition(
+          (position) => {
+            window.clearTimeout(timer);
+            navigator.geolocation.clearWatch(watchId);
+            resolve(position);
+          },
+          (cause) => {
+            lastError = cause;
+            if (errorCode(cause) === 1) {
+              window.clearTimeout(timer);
+              navigator.geolocation.clearWatch(watchId);
+              reject(cause);
+            }
+          },
+          { enableHighAccuracy: false, maximumAge: 120000, timeout: 10000 },
+        );
+        const timer = window.setTimeout(() => {
+          navigator.geolocation.clearWatch(watchId);
+          reject(lastError ?? new Error('Location request timed out'));
+        }, 45000);
+      });
     try {
-      let position: GeolocationPosition;
-      try {
-        position = await request({
-          enableHighAccuracy: true,
-          timeout: 15000,
-          maximumAge: 0,
-        });
-      } catch (cause) {
-        if (cause instanceof GeolocationPositionError && cause.code === 1) {
-          throw cause;
-        }
-        position = await request({
-          enableHighAccuracy: false,
-          timeout: 20000,
-          maximumAge: 60000,
-        });
-      }
+      const position = await waitForPosition();
       setLocation(position);
     } catch (cause) {
-      const denied =
-        cause instanceof GeolocationPositionError && cause.code === 1;
+      const denied = errorCode(cause) === 1;
       setError(
         denied
           ? 'Location access is blocked for this website. Allow Location for customer.pepsa.co in your browser site settings, then try again.'
-          : 'Your location could not be determined. Check macOS Location Services and your internet connection, then retry.',
+          : 'macOS could not determine your location. Turn on Wi-Fi (it may remain disconnected), keep Location Services enabled for this browser, and try again.',
       );
     } finally {
       setLocating(false);
