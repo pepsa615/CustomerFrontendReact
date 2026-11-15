@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Alert, Button, FormField, Input } from '../components/ui';
 import { AuthCard } from '../features/identity/auth-card';
@@ -9,46 +9,128 @@ export function Component() {
   const { session, setSession } = useAuth();
   const navigate = useNavigate();
   const videoRef = useRef<HTMLVideoElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const [selfie, setSelfie] = useState<File | null>(null);
   const [location, setLocation] = useState<GeolocationPosition | null>(null);
+  const [cameraReady, setCameraReady] = useState(false);
+  const [locating, setLocating] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  useEffect(
+    () => () => streamRef.current?.getTracks().forEach((track) => track.stop()),
+    [],
+  );
   async function enableCamera() {
+    setError('');
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setError(
+        'Camera capture is unavailable in this browser. Choose a selfie image instead.',
+      );
+      return;
+    }
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'user' },
-      });
+      streamRef.current?.getTracks().forEach((track) => track.stop());
+      let stream: MediaStream;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: { facingMode: { ideal: 'user' } },
+        });
+      } catch (cause) {
+        if (
+          cause instanceof DOMException &&
+          ['OverconstrainedError', 'NotFoundError'].includes(cause.name)
+        ) {
+          stream = await navigator.mediaDevices.getUserMedia({
+            audio: false,
+            video: true,
+          });
+        } else {
+          throw cause;
+        }
+      }
+      streamRef.current = stream;
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         await videoRef.current.play();
+        setCameraReady(true);
       }
-    } catch {
+    } catch (cause) {
+      setCameraReady(false);
+      const denied =
+        cause instanceof DOMException &&
+        ['NotAllowedError', 'SecurityError'].includes(cause.name);
       setError(
-        'Camera permission was denied. You can choose an image instead.',
+        denied
+          ? 'Camera access is blocked for this website. Allow Camera for customer.pepsa.co in your browser site settings, then try again.'
+          : 'The camera could not be started. Close other apps using it, then retry or choose a selfie image.',
       );
     }
   }
   function capture() {
     const video = videoRef.current;
-    if (!video?.videoWidth) return;
+    if (!video?.videoWidth) {
+      setError('Wait for the camera preview to appear before capturing.');
+      return;
+    }
     const canvas = document.createElement('canvas');
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     canvas.getContext('2d')?.drawImage(video, 0, 0);
     canvas.toBlob(
-      (blob) =>
-        blob &&
-        setSelfie(new File([blob], 'selfie.jpg', { type: 'image/jpeg' })),
+      (blob) => {
+        if (!blob) {
+          setError('The selfie could not be captured. Please try again.');
+          return;
+        }
+        setSelfie(new File([blob], 'selfie.jpg', { type: 'image/jpeg' }));
+        setError('');
+      },
       'image/jpeg',
       0.9,
     );
   }
-  function locate() {
-    navigator.geolocation.getCurrentPosition(
-      setLocation,
-      () => setError('Location permission is required to complete onboarding.'),
-      { enableHighAccuracy: true, timeout: 15000 },
-    );
+  async function locate() {
+    setError('');
+    if (!navigator.geolocation) {
+      setError('Location is unavailable in this browser.');
+      return;
+    }
+    setLocating(true);
+    const request = (options: PositionOptions) =>
+      new Promise<GeolocationPosition>((resolve, reject) =>
+        navigator.geolocation.getCurrentPosition(resolve, reject, options),
+      );
+    try {
+      let position: GeolocationPosition;
+      try {
+        position = await request({
+          enableHighAccuracy: true,
+          timeout: 15000,
+          maximumAge: 0,
+        });
+      } catch (cause) {
+        if (cause instanceof GeolocationPositionError && cause.code === 1) {
+          throw cause;
+        }
+        position = await request({
+          enableHighAccuracy: false,
+          timeout: 20000,
+          maximumAge: 60000,
+        });
+      }
+      setLocation(position);
+    } catch (cause) {
+      const denied =
+        cause instanceof GeolocationPositionError && cause.code === 1;
+      setError(
+        denied
+          ? 'Location access is blocked for this website. Allow Location for customer.pepsa.co in your browser site settings, then try again.'
+          : 'Your location could not be determined. Check macOS Location Services and your internet connection, then retry.',
+      );
+    } finally {
+      setLocating(false);
+    }
   }
   async function submit() {
     if (!selfie || !location || !session) return;
@@ -95,7 +177,7 @@ export function Component() {
           <Button variant="secondary" onClick={enableCamera}>
             Enable camera
           </Button>
-          <Button variant="secondary" onClick={capture}>
+          <Button variant="secondary" disabled={!cameraReady} onClick={capture}>
             Capture selfie
           </Button>
         </div>
@@ -103,13 +185,14 @@ export function Component() {
           <Input
             type="file"
             accept="image/jpeg,image/png,image/webp"
+            capture="user"
             onChange={(event) => setSelfie(event.target.files?.[0] ?? null)}
           />
         </FormField>
         {selfie ? (
           <Alert tone="success">Selfie ready: {selfie.name}</Alert>
         ) : null}
-        <Button variant="secondary" onClick={locate}>
+        <Button variant="secondary" loading={locating} onClick={locate}>
           Use current location
         </Button>
         {location ? (
