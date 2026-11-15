@@ -1,0 +1,46 @@
+name: Deploy Customer Frontend
+
+on:
+  push:
+    branches: [staging, main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Environment to deploy
+        required: true
+        type: choice
+        options: [staging, production]
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ (github.ref == 'refs/heads/main' || inputs.environment == 'production') && 'production' || 'staging' }}
+    concurrency:
+      group: deploy-customer-frontend-${{ (github.ref == 'refs/heads/main' || inputs.environment == 'production') && 'production' || 'staging' }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script_stop: true
+          command_timeout: 30m
+          script: |
+            set -euo pipefail
+            if [[ "${{ github.ref == 'refs/heads/main' || inputs.environment == 'production' }}" == "true" ]]; then
+              deploy_root="${HOME}/var/www/customer-frontend-production"
+              branch=main
+            else
+              deploy_root="${HOME}/var/www/customer-frontend-staging"
+              branch=staging
+            fi
+            cd "$deploy_root"
+            git fetch origin "$branch"
+            git reset --hard "origin/$branch"
+            PEPSA_STATIC_ROOT="$deploy_root" bash deploy/scripts/remote-deploy.sh
