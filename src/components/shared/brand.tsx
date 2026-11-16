@@ -2,26 +2,18 @@ import { cn } from '../../utils/cn';
 
 export function Brand({
   inverse = false,
+  compact = false,
   className,
 }: {
   inverse?: boolean;
+  compact?: boolean;
   className?: string;
 }) {
   return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-2 font-black tracking-tight',
-        inverse ? 'text-white' : 'text-primary',
-        className,
-      )}
-    >
-      <img
-        src="/icons/pepsa-192.png"
-        alt=""
-        className="size-8 rounded-lg"
-        aria-hidden
-      />
-      <span>PEPSA</span>
-    </span>
+    <img
+      className={cn('h-9 w-auto', inverse && 'brightness-0 invert', className)}
+      src={compact ? '/pepsa-mark.svg' : '/pepsa-wordmark.svg'}
+      alt="Pepsa"
+    />
   );
 }

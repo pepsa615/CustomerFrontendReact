@@ -33,18 +33,18 @@ const links = [
 const mobileLinks = [links[0], links[2], links[4], links[5], links[7]];
 
 export function AppLayout() {
-  const { theme, setTheme } = useTheme();
+  const { resolved, setTheme } = useTheme();
   return (
-    <div className="min-h-dvh overflow-x-hidden bg-background lg:grid lg:grid-cols-[16rem_1fr]">
+    <div className="min-h-dvh overflow-x-hidden bg-background lg:grid lg:grid-cols-[16rem_1fr] xl:grid-cols-[18rem_1fr]">
       <aside className="hidden border-r bg-surface p-4 lg:block lg:min-h-dvh">
         <div className="mb-5 flex items-center justify-between">
-          <Brand className="text-xl" />
+          <Brand className="h-7 w-auto" compact />
           <button
             className="rounded-lg p-2 hover:bg-surface-muted"
             aria-label="Toggle theme"
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            onClick={() => setTheme(resolved === 'dark' ? 'light' : 'dark')}
           >
-            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
+            {resolved === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
           </button>
         </div>
         <nav aria-label="Main navigation" className="grid gap-1">
@@ -67,15 +67,15 @@ export function AppLayout() {
           ))}
         </nav>
       </aside>
-      <div className="min-w-0 pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0">
+      <div className="min-w-0 pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-0 xl:px-2">
         <header className="sticky top-0 z-30 flex min-h-16 items-center justify-between border-b bg-surface/95 px-5 backdrop-blur lg:hidden">
-          <Brand className="text-xl" />
+          <Brand className="h-7 w-auto" compact />
           <button
             className="grid size-11 place-items-center rounded-xl hover:bg-surface-muted"
             aria-label="Toggle theme"
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            onClick={() => setTheme(resolved === 'dark' ? 'light' : 'dark')}
           >
-            {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+            {resolved === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
           </button>
         </header>
         <Outlet />

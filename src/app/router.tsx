@@ -1,19 +1,17 @@
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { createBrowserRouter, Navigate, Outlet } from 'react-router-dom';
 import { AppLayout } from '../layouts/app-layout';
 import { AuthLayout } from '../layouts/auth-layout';
 import { PublicLayout } from '../layouts/public-layout';
 import { RouteError } from '../pages/route-error';
 import { RequireAuth } from './require-auth';
-import { hasOrderIntent } from '../features/orders/order-intent';
-
-function EntryRoute() {
-  return (
-    <Navigate to={hasOrderIntent() ? '/app/orders' : '/auth/login'} replace />
-  );
-}
+import { RequireSession } from './require-session';
 
 export const router = createBrowserRouter([
-  { path: '/', element: <EntryRoute /> },
+  { path: '/', lazy: () => import('../pages/splash-page') },
+  { path: '/welcome', lazy: () => import('../pages/welcome-page') },
+  { path: '/terms', lazy: () => import('../pages/legal-page') },
+  { path: '/privacy', lazy: () => import('../pages/legal-page') },
+  { path: '/indemnity', lazy: () => import('../pages/legal-page') },
   {
     path: '/auth',
     element: <AuthLayout />,
@@ -31,6 +29,27 @@ export const router = createBrowserRouter([
         lazy: () => import('../pages/password-recovery-page'),
       },
       { path: 'onboarding', lazy: () => import('../pages/onboarding-page') },
+      {
+        path: 'setup',
+        element: (
+          <RequireSession>
+            <Outlet />
+          </RequireSession>
+        ),
+        children: [
+          { path: 'phone', lazy: () => import('../pages/setup-phone-page') },
+          { path: 'pin', lazy: () => import('../pages/setup-pin-page') },
+          { path: 'selfie', lazy: () => import('../pages/setup-selfie-page') },
+          {
+            path: 'selfie/review',
+            lazy: () => import('../pages/setup-selfie-review-page'),
+          },
+          {
+            path: 'location',
+            lazy: () => import('../pages/setup-location-page'),
+          },
+        ],
+      },
     ],
   },
   {
@@ -75,9 +94,6 @@ export const router = createBrowserRouter([
     element: <PublicLayout />,
     errorElement: <RouteError />,
     children: [
-      { path: '/terms', lazy: () => import('../pages/legal-page') },
-      { path: '/privacy', lazy: () => import('../pages/legal-page') },
-      { path: '/indemnity', lazy: () => import('../pages/legal-page') },
       {
         path: '/delivery/:code',
         lazy: () => import('../pages/public-delivery-page'),

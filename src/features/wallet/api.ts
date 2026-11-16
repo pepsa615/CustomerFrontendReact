@@ -50,6 +50,12 @@ export type TransactionReadiness = {
   pinSet: boolean;
   transactionReady: boolean;
 };
+export type WalletLoyalty = {
+  enabled: boolean;
+  points: number;
+  discountNaira: number;
+  label: string;
+};
 
 const auth = (token: string) => ({ authorization: `Bearer ${token}` });
 export const walletApi = {
@@ -133,4 +139,15 @@ export const walletApi = {
       headers: { ...auth(token), 'Idempotency-Key': key },
       body: JSON.stringify(body),
     }),
+  loyalty: (token: string) =>
+    apiRequest<WalletLoyalty>('/wallet/loyalty', { headers: auth(token) }),
+  emailStatement: (token: string, body: { from: string; to: string }) =>
+    apiRequest<{ sent: boolean; count: number }>(
+      '/wallet/transactions/statement/email',
+      {
+        method: 'POST',
+        headers: auth(token),
+        body: JSON.stringify(body),
+      },
+    ),
 };

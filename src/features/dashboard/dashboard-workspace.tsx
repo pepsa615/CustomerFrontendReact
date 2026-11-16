@@ -45,15 +45,8 @@ const quickActions: Array<{ label: string; to: string; icon: Icon }> = [
   { label: 'Delivery', to: '/app/orders?create=true', icon: Box },
   { label: 'Share link', to: '/app/delivery-links', icon: Link2 },
   { label: 'Referral', to: '/app/settings/referrals', icon: UsersRound },
-  { label: 'Business', to: '/app/business', icon: BriefcaseBusiness },
+  { label: 'POD', to: '/app/business', icon: BriefcaseBusiness },
 ];
-
-const terminalStatuses = new Set([
-  'DELIVERED',
-  'COMPLETED',
-  'CANCELLED',
-  'FAILED',
-]);
 
 function ActionLink({
   label,
@@ -113,7 +106,7 @@ function OrderRow({ order }: { order: Order }) {
   return (
     <Link
       to={`/app/orders/${order.id}`}
-      className="flex items-center gap-3 rounded-2xl bg-surface px-3 py-3 shadow-[0_5px_18px_rgba(40,42,65,0.08)] ring-1 ring-border/50 transition hover:-translate-y-0.5 hover:shadow-md sm:px-4"
+      className="flex items-center gap-3 rounded-2xl bg-surface px-3 py-3 shadow-sm ring-1 ring-border/60 transition hover:-translate-y-0.5 hover:shadow-md dark:shadow-black/20 sm:px-4"
     >
       <span className="grid size-10 shrink-0 place-items-center rounded-full border border-primary/20 bg-primary-soft text-primary">
         <PackageCheck size={20} aria-hidden />
@@ -139,7 +132,7 @@ function OrderRow({ order }: { order: Order }) {
 export function DashboardWorkspace() {
   const { session } = useAuth();
   const token = session!.accessToken;
-  const firstName = session!.user.fullName.trim().split(/\s+/)[0] || 'there';
+  const displayName = session!.user.fullName.trim() || 'Customer';
   const [balanceVisible, setBalanceVisible] = useState(true);
   const [activityTab, setActivityTab] = useState('deliveries');
   const wallet = useQuery({
@@ -150,9 +143,6 @@ export function DashboardWorkspace() {
     queryKey: ['orders', 'dashboard'],
     queryFn: () => orderApi.list(token, 6),
   });
-  const activeCount =
-    orders.data?.filter((order) => !terminalStatuses.has(order.status))
-      .length ?? 0;
   const balance = wallet.data
     ? new Intl.NumberFormat('en-NG', {
         style: 'currency',
@@ -161,16 +151,22 @@ export function DashboardWorkspace() {
     : null;
 
   return (
-    <main className="mx-auto w-full max-w-6xl px-4 py-5 sm:px-6 sm:py-7 lg:px-8">
+    <main className="mx-auto w-full max-w-6xl px-4 py-5 sm:px-6 sm:py-7 lg:px-8 xl:max-w-7xl xl:py-10">
       <section className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-sm text-muted">Welcome back</p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">
-            {firstName}
+          <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
+            {displayName}
           </h1>
-          <p className="mt-1 text-sm text-muted">
-            {activeCount} active {activeCount === 1 ? 'delivery' : 'deliveries'}
-          </p>
+          {wallet.data?.fundingAccount?.accountNumber ? (
+            <p className="mt-1 flex flex-wrap items-center gap-1 text-sm text-muted">
+              <span>
+                {wallet.data.fundingAccount.accountNumber}
+                {wallet.data.fundingAccount.bankName
+                  ? ` - ${wallet.data.fundingAccount.bankName}`
+                  : ''}
+              </span>
+            </p>
+          ) : null}
         </div>
         <div className="text-left sm:text-right">
           <p className="text-xs font-medium uppercase tracking-[0.12em] text-muted">

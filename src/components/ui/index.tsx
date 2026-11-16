@@ -315,11 +315,13 @@ export function Dialog({
   title,
   children,
   onClose,
+  panelClassName,
 }: {
   open: boolean;
   title: string;
   children: ReactNode;
   onClose: () => void;
+  panelClassName?: string;
 }) {
   const closeRef = useRef<HTMLButtonElement>(null);
   useEffect(() => {
@@ -343,7 +345,10 @@ export function Dialog({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="max-h-[90dvh] w-full overflow-auto rounded-t-3xl bg-surface p-6 sm:max-w-md sm:rounded-3xl"
+        className={cn(
+          'max-h-[90dvh] w-full overflow-auto rounded-t-3xl bg-surface p-6 sm:max-w-md sm:rounded-3xl',
+          panelClassName,
+        )}
         onMouseDown={(event) => event.stopPropagation()}
       >
         <div className="flex items-center justify-between">
