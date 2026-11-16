@@ -38,17 +38,8 @@ export function OrderWorkspace() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <form
-          className="hidden lg:block"
-          onSubmit={(event) => event.preventDefault()}
-        >
-          <p className="text-2xl font-bold">Orders</p>
-          <p className="text-sm text-muted">
-            Quote first, then add package details — like DHL.
-          </p>
-        </form>
+    <div className="w-full">
+      <div className="mb-6 flex justify-end">
         <Button onClick={() => setCreating(true)}>New delivery</Button>
       </div>
       {orders.isPending ? (
