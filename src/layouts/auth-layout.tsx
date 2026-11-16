@@ -7,11 +7,11 @@ export function AuthLayout() {
         <Brand inverse className="text-2xl" />
         <div>
           <p className="max-w-sm text-4xl font-semibold leading-tight">
-            Deliver smarter. Move money safely.
+            Deliver smarter. Track every movement.
           </p>
           <p className="mt-4 max-w-sm text-white/75">
-            One secure account for deliveries, wallet services and your
-            business.
+            Book reliable deliveries, follow them live, and manage personal
+            or business logistics from one place.
           </p>
         </div>
         <p className="text-sm text-white/60">

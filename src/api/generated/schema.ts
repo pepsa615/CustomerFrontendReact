@@ -1332,6 +1332,8 @@ export interface components {
             termsAccepted: true;
             /** @constant */
             privacyAccepted: true;
+            /** @constant */
+            indemnityAccepted: true;
         };
         VerifyRegistrationRequest: {
             registrationToken: string;

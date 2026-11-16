@@ -41,6 +41,7 @@ export function Component() {
             password: data.get('password'),
             termsAccepted: data.get('terms') === 'on',
             privacyAccepted: data.get('privacy') === 'on',
+            indemnityAccepted: data.get('indemnity') === 'on',
           }),
         },
       );
@@ -124,11 +125,15 @@ export function Component() {
         </FormField>
         <label className="flex gap-3 text-sm">
           <Checkbox name="terms" required />
-          <span>I agree to the Terms of Service.</span>
+          <span>I agree to the <Link className="font-semibold text-primary" to="/terms">Terms and Conditions</Link>.</span>
         </label>
         <label className="flex gap-3 text-sm">
           <Checkbox name="privacy" required />
-          <span>I consent to the Privacy Policy and identity onboarding.</span>
+          <span>I consent to the <Link className="font-semibold text-primary" to="/privacy">Privacy Policy</Link>.</span>
+        </label>
+        <label className="flex gap-3 text-sm">
+          <Checkbox name="indemnity" required />
+          <span>I agree to the <Link className="font-semibold text-primary" to="/indemnity">Indemnity Agreement</Link>.</span>
         </label>
         <Button type="submit" loading={loading}>
           Create account

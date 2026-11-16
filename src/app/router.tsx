@@ -75,6 +75,9 @@ export const router = createBrowserRouter([
     element: <PublicLayout />,
     errorElement: <RouteError />,
     children: [
+      { path: '/terms', lazy: () => import('../pages/legal-page') },
+      { path: '/privacy', lazy: () => import('../pages/legal-page') },
+      { path: '/indemnity', lazy: () => import('../pages/legal-page') },
       {
         path: '/delivery/:code',
         lazy: () => import('../pages/public-delivery-page'),
