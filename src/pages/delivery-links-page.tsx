@@ -1,12 +1,9 @@
-import { Page } from '../components/shared/page';
 import { LinksWorkspace } from '../features/delivery-links/links-workspace';
+
 export function Component() {
   return (
-    <Page
-      title="Delivery links"
-      description="Create secure links for customer delivery details."
-    >
+    <main className="mx-auto w-full max-w-6xl px-4 py-5 sm:px-6 sm:py-6 lg:px-8">
       <LinksWorkspace />
-    </Page>
+    </main>
   );
 }

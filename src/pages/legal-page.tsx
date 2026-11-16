@@ -1,36 +1,67 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Card } from '../components/ui';
+import { Brand } from '../components/shared/brand';
+import { ResponsiveShell } from '../components/shared/responsive-shell';
+import { INDEMNITY_HTML, INDEMNITY_TITLE } from '../content/indemnity';
+import { PRIVACY_HTML, PRIVACY_TITLE } from '../content/privacy';
+import { TERMS_HTML, TERMS_TITLE } from '../content/terms';
 
 const documents = {
-  '/terms': {
-    title: 'Terms and Conditions',
-    url: import.meta.env.VITE_TERMS_URL ?? 'https://pepsabas.pepsa.co/terms',
-  },
-  '/privacy': {
-    title: 'Privacy Policy',
-    url: import.meta.env.VITE_PRIVACY_URL ?? 'https://pepsabas.pepsa.co/privacy',
-  },
-  '/indemnity': {
-    title: 'Indemnity Agreement',
-    url: import.meta.env.VITE_INDEMNITY_URL ?? 'https://pepsabas.pepsa.co/indemnity',
-  },
+  '/terms': { title: TERMS_TITLE, html: TERMS_HTML },
+  '/privacy': { title: PRIVACY_TITLE, html: PRIVACY_HTML },
+  '/indemnity': { title: INDEMNITY_TITLE, html: INDEMNITY_HTML },
 } as const;
+
+const prose =
+  'text-sm leading-7 text-foreground [&_h3]:mt-8 [&_h3]:text-base [&_h3]:font-bold [&_h4]:mt-5 [&_h4]:text-sm [&_h4]:font-semibold [&_ol]:my-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol_ol]:list-[lower-alpha] [&_ol_ol_ol]:list-[lower-roman] [&_p]:my-3 [&_ul]:my-3 [&_ul]:list-disc [&_ul]:pl-5';
 
 export function Component() {
   const { pathname } = useLocation();
-  const document = documents[pathname as keyof typeof documents] ?? documents['/terms'];
+  const document =
+    documents[pathname as keyof typeof documents] ?? documents['/terms'];
+
   return (
-    <main className="mx-auto w-full max-w-3xl px-4 py-8">
-      <Card className="p-5 sm:p-8">
-        <p className="text-sm font-semibold uppercase tracking-wide text-primary">Pepsa legal</p>
-        <h1 className="mt-2 text-3xl font-semibold">{document.title}</h1>
-        <p className="mt-3 text-muted">This is the canonical Pepsa document used across Customer and Business accounts.</p>
-        <div className="mt-6 flex flex-wrap gap-3">
-          <a className="inline-flex min-h-12 items-center rounded-xl bg-primary px-5 py-3 text-sm font-semibold text-primary-foreground" href={document.url} target="_blank" rel="noreferrer">Open full document</a>
-          <Link className="inline-flex min-h-12 items-center rounded-xl border bg-surface px-5 py-3 text-sm font-semibold" to="/auth/sign-up">Return to sign up</Link>
+    <ResponsiveShell>
+      <main className="min-h-dvh bg-surface xl:min-h-[calc(100dvh-3rem)]">
+        <header className="border-b border-border px-6 py-5 sm:px-8 xl:px-12">
+          <div className="mx-auto flex max-w-3xl items-center justify-between gap-4">
+            <Link to="/">
+              <Brand className="h-7 w-auto" />
+            </Link>
+            <Link
+              className="text-sm font-semibold text-primary"
+              to="/auth/sign-up"
+            >
+              Back to sign up
+            </Link>
+          </div>
+        </header>
+        <div className="mx-auto max-w-3xl px-6 py-10 sm:px-8 sm:py-14 xl:px-12">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted">
+            Legal
+          </p>
+          <h1 className="mt-3 text-[1.75rem] font-bold leading-tight tracking-tight sm:text-[2rem]">
+            {document.title}
+          </h1>
+          <p className="mt-3 text-sm text-muted">
+            Canonical agreement for Pepsa customer accounts.
+          </p>
+          <article
+            className={`mt-8 max-w-none ${prose}`}
+            dangerouslySetInnerHTML={{ __html: document.html }}
+          />
+          <p className="mt-10 border-t border-border pt-8 text-sm text-muted">
+            Continue to{' '}
+            <Link className="font-semibold text-primary" to="/auth/sign-up">
+              create an account
+            </Link>{' '}
+            or{' '}
+            <Link className="font-semibold text-primary" to="/auth/login">
+              sign in
+            </Link>
+            .
+          </p>
         </div>
-        <iframe className="mt-6 min-h-[70vh] w-full rounded-xl border" src={document.url} title={document.title} />
-      </Card>
-    </main>
+      </main>
+    </ResponsiveShell>
   );
 }

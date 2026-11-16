@@ -5,7 +5,7 @@ export function PublicLayout() {
     <div className="min-h-dvh bg-background">
       <header className="border-b bg-surface px-4 py-4">
         <div className="mx-auto max-w-3xl">
-          <Brand className="text-xl" />
+          <Brand className="h-7 w-auto" />
         </div>
       </header>
       <Outlet />
