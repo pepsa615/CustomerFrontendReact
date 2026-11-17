@@ -13,8 +13,6 @@ const emptyForm = {
   address: '',
   city: '',
   state: '',
-  latitude: '',
-  longitude: '',
   houseAddress: '',
   landmark: '',
 };
@@ -29,8 +27,6 @@ function recordToForm(profile: BusinessProfileRecord) {
     address: String(profile.address ?? ''),
     city: String(profile.city ?? ''),
     state: String(profile.state ?? ''),
-    latitude: String(profile.latitude ?? ''),
-    longitude: String(profile.longitude ?? ''),
     houseAddress: String(profile.houseAddress ?? ''),
     landmark: String(profile.landmark ?? ''),
   };
@@ -85,13 +81,7 @@ export function BusinessProfileDialog({
   }
 
   function needsMoreDetails() {
-    return (
-      !form.phoneNumber.trim() ||
-      !form.city.trim() ||
-      !form.state.trim() ||
-      !form.latitude.trim() ||
-      !form.longitude.trim()
-    );
+    return !form.phoneNumber.trim() || !form.city.trim() || !form.state.trim();
   }
 
   async function persist(event?: FormEvent) {
@@ -107,7 +97,7 @@ export function BusinessProfileDialog({
     }
     if (needsMoreDetails()) {
       setMoreOpen(true);
-      setError('Add phone, city, state, and map coordinates in more details.');
+      setError('Add phone, city, and state in more details.');
       return;
     }
 
@@ -134,19 +124,6 @@ export function BusinessProfileDialog({
     } finally {
       setBusy(false);
     }
-  }
-
-  function useCurrentLocation() {
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        patch({
-          latitude: String(position.coords.latitude),
-          longitude: String(position.coords.longitude),
-        });
-        setError('');
-      },
-      () => setError('Location permission was not granted.'),
-    );
   }
 
   return (
@@ -280,38 +257,12 @@ export function BusinessProfileDialog({
               />
             </FormField>
           </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <FormField label="Latitude" required>
-              <Input
-                type="number"
-                step="any"
-                value={form.latitude}
-                onChange={(event) => patch({ latitude: event.target.value })}
-              />
-            </FormField>
-            <FormField label="Longitude" required>
-              <Input
-                type="number"
-                step="any"
-                value={form.longitude}
-                onChange={(event) => patch({ longitude: event.target.value })}
-              />
-            </FormField>
-          </div>
           <FormField label="Building / floor">
             <Input
               value={form.houseAddress}
               onChange={(event) => patch({ houseAddress: event.target.value })}
             />
           </FormField>
-          <Button
-            type="button"
-            variant="secondary"
-            className="w-full sm:w-auto"
-            onClick={useCurrentLocation}
-          >
-            Use current location
-          </Button>
           {error ? (
             <p className="text-sm text-danger" role="alert">
               {error}

@@ -154,52 +154,6 @@ export function BusinessWorkspace() {
                 defaultValue={String(profile.state ?? '')}
               />
             </FormField>
-            <FormField label="Latitude" hint="Selected map coordinate">
-              <Input
-                id="business-latitude"
-                name="latitude"
-                required
-                type="number"
-                step="any"
-                defaultValue={String(profile.latitude ?? '')}
-              />
-            </FormField>
-            <FormField label="Longitude" hint="Selected map coordinate">
-              <Input
-                id="business-longitude"
-                name="longitude"
-                required
-                type="number"
-                step="any"
-                defaultValue={String(profile.longitude ?? '')}
-              />
-            </FormField>
-            <div className="sm:col-span-2">
-              <Button
-                variant="secondary"
-                onClick={() =>
-                  navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                      const latitude =
-                        document.querySelector<HTMLInputElement>(
-                          '#business-latitude',
-                        );
-                      const longitude =
-                        document.querySelector<HTMLInputElement>(
-                          '#business-longitude',
-                        );
-                      if (latitude)
-                        latitude.value = String(position.coords.latitude);
-                      if (longitude)
-                        longitude.value = String(position.coords.longitude);
-                    },
-                    () => setMessage('Location permission was not granted.'),
-                  )
-                }
-              >
-                Use current location
-              </Button>
-            </div>
             <FormField label="Building / floor">
               <Input
                 name="houseAddress"
