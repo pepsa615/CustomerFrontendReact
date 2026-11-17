@@ -23,6 +23,8 @@ jobs:
       cancel-in-progress: false
     steps:
       - uses: actions/checkout@v4
+      - name: Block malicious and obfuscated code
+        run: bash scripts/check-malicious-code.sh
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.2.0
         with:
