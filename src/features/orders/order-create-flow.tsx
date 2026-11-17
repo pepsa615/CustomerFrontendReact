@@ -19,6 +19,7 @@ import {
 } from './api';
 import { completeOrderIntent } from './order-intent';
 import { OrderFlowHeader } from './components/order-flow-header';
+import { AddressSearch } from '../../components/shared/address-search';
 
 const stepTitles = [
   'Where are we delivering?',
@@ -54,6 +55,10 @@ export function OrderCreateFlow({
   const [order, setOrder] = useState<Order>();
   const [pin, setPin] = useState('');
   const [insurance, setInsurance] = useState(false);
+  const [selectedRoute, setSelectedRoute] = useState({
+    pickup: Boolean(initialRoute?.pickup?.address),
+    delivery: Boolean(initialRoute?.delivery?.address),
+  });
   const [quick, setQuick] = useState<QuickQuoteInput>({
     deliveryType: initialRoute?.deliveryType ?? 'last_mile',
     mobilityMethod: initialRoute?.mobilityMethod ?? 'motorcycle',
@@ -115,7 +120,10 @@ export function OrderCreateFlow({
           city: quick.delivery.city,
           state: quick.delivery.state,
         },
-        parcel: { ...d.parcel, category: quick.parcel?.category ?? d.parcel.category },
+        parcel: {
+          ...d.parcel,
+          category: quick.parcel?.category ?? d.parcel.category,
+        },
       }));
       completeOrderIntent();
       setStep(1);
@@ -132,7 +140,12 @@ export function OrderCreateFlow({
     setError('');
     try {
       await orderApi.updateDetails(token, order.id, details);
-      const paid = await orderApi.pay(token, order.id, pin, crypto.randomUUID());
+      const paid = await orderApi.pay(
+        token,
+        order.id,
+        pin,
+        crypto.randomUUID(),
+      );
       navigate(`/app/orders/${paid.id}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Payment failed');
@@ -142,6 +155,8 @@ export function OrderCreateFlow({
   }
 
   const routeReady =
+    selectedRoute.pickup &&
+    selectedRoute.delivery &&
     quick.pickup.address.trim() &&
     quick.pickup.city.trim() &&
     quick.pickup.state.trim() &&
@@ -152,8 +167,8 @@ export function OrderCreateFlow({
   const contactReady = (kind: 'pickup' | 'delivery') =>
     Boolean(
       details[kind].contact.name.trim() &&
-        details[kind].contact.phone.trim() &&
-        details[kind].address.trim(),
+      details[kind].contact.phone.trim() &&
+      details[kind].address.trim(),
     );
 
   return (
@@ -162,11 +177,7 @@ export function OrderCreateFlow({
         title={stepTitles[step]}
         step={step}
         steps={stepTitles.length}
-        onBack={
-          step > 0
-            ? () => setStep((s) => Math.max(0, s - 1))
-            : undefined
-        }
+        onBack={step > 0 ? () => setStep((s) => Math.max(0, s - 1)) : undefined}
       />
       {error ? <Alert tone="danger">{error}</Alert> : null}
 
@@ -200,14 +211,28 @@ export function OrderCreateFlow({
             </Select>
           </FormField>
           <FormField label="Pickup address" required>
-            <Input
+            <AddressSearch
               value={quick.pickup.address}
-              onChange={(e) =>
+              onChange={(value) => {
+                setSelectedRoute((current) => ({ ...current, pickup: false }));
                 setQuick({
                   ...quick,
-                  pickup: { ...quick.pickup, address: e.target.value },
-                })
-              }
+                  pickup: { ...quick.pickup, address: value },
+                });
+              }}
+              onSelect={(address) => {
+                setSelectedRoute((current) => ({ ...current, pickup: true }));
+                setQuick({
+                  ...quick,
+                  pickup: {
+                    ...quick.pickup,
+                    address: address.formattedAddress,
+                    city: address.city,
+                    state: address.state,
+                    country: address.country,
+                  },
+                });
+              }}
               placeholder="Street or area"
             />
           </FormField>
@@ -236,14 +261,31 @@ export function OrderCreateFlow({
             </FormField>
           </div>
           <FormField label="Delivery address" required>
-            <Input
+            <AddressSearch
               value={quick.delivery.address}
-              onChange={(e) =>
+              onChange={(value) => {
+                setSelectedRoute((current) => ({
+                  ...current,
+                  delivery: false,
+                }));
                 setQuick({
                   ...quick,
-                  delivery: { ...quick.delivery, address: e.target.value },
-                })
-              }
+                  delivery: { ...quick.delivery, address: value },
+                });
+              }}
+              onSelect={(address) => {
+                setSelectedRoute((current) => ({ ...current, delivery: true }));
+                setQuick({
+                  ...quick,
+                  delivery: {
+                    ...quick.delivery,
+                    address: address.formattedAddress,
+                    city: address.city,
+                    state: address.state,
+                    country: address.country,
+                  },
+                });
+              }}
             />
           </FormField>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -309,7 +351,8 @@ export function OrderCreateFlow({
             </span>
           </div>
           <p className="text-xs text-muted">
-            Price is locked for 15 minutes. Add contacts and package details next.
+            Price is locked for 15 minutes. Add contacts and package details
+            next.
           </p>
           <Button onClick={() => setStep(2)}>Continue</Button>
         </Card>
@@ -351,8 +394,12 @@ export function OrderCreateFlow({
                 })
               }
             >
-              <option value="Mail and small parcel">Mail and small parcel</option>
-              <option value="Electronic and gadgets">Electronic and gadgets</option>
+              <option value="Mail and small parcel">
+                Mail and small parcel
+              </option>
+              <option value="Electronic and gadgets">
+                Electronic and gadgets
+              </option>
               <option value="Food and essentials">Food and essentials</option>
               <option value="Pharmaceutical item">Pharmaceutical item</option>
             </Select>
@@ -478,7 +525,10 @@ export function OrderCreateFlow({
           >
             Pay
           </Button>
-          <Link className="text-center text-sm text-primary" to="/app/security/transaction">
+          <Link
+            className="text-center text-sm text-primary"
+            to="/app/security/transaction"
+          >
             Set up your transaction PIN
           </Link>
         </Card>
@@ -507,12 +557,24 @@ function ContactStep({
   return (
     <Card className="grid gap-4">
       <FormField label="Full address">
-        <Input
+        <AddressSearch
           value={place.address}
-          onChange={(e) =>
+          onChange={(value) =>
             setDetails({
               ...details,
-              [kind]: { ...place, address: e.target.value },
+              [kind]: { ...place, address: value },
+            })
+          }
+          onSelect={(address) =>
+            setDetails({
+              ...details,
+              [kind]: {
+                ...place,
+                address: address.formattedAddress,
+                city: address.city,
+                state: address.state,
+                country: address.country,
+              },
             })
           }
         />
