@@ -17,6 +17,10 @@ import {
   type PublicLink,
   type PublicSubmission,
 } from '../features/delivery-links/api';
+import {
+  AddressSearch,
+  type SelectedAddress,
+} from '../components/shared/address-search';
 
 export function Component() {
   const { code = '' } = useParams();
@@ -32,6 +36,8 @@ export function Component() {
     expiresAt: string;
   }>();
   const [done, setDone] = useState(false);
+  const [selectedAddress, setSelectedAddress] = useState<SelectedAddress>();
+  const [addressQuery, setAddressQuery] = useState('');
   const [review, setReview] = useState<{
     submissionRef: string;
     requiresPayment: boolean;
@@ -51,6 +57,10 @@ export function Component() {
   }, [code]);
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!selectedAddress) {
+      setError('Search for and select the address from the suggestions.');
+      return;
+    }
     setBusy(true);
     setError('');
     const form = new FormData(event.currentTarget);
@@ -248,7 +258,19 @@ export function Component() {
               </h2>
             </div>
             <FormField label="Full address" required>
-              <Input name="address" required autoComplete="street-address" />
+              <AddressSearch
+                name="address"
+                required
+                value={addressQuery}
+                onChange={(value) => {
+                  setAddressQuery(value);
+                  setSelectedAddress(undefined);
+                }}
+                onSelect={(value) => {
+                  setAddressQuery(value.formattedAddress);
+                  setSelectedAddress(value);
+                }}
+              />
             </FormField>
             <FormField
               label={
@@ -267,10 +289,20 @@ export function Component() {
               <Input name="landmark" />
             </FormField>
             <FormField label="City" required>
-              <Input name="city" required />
+              <Input
+                name="city"
+                required
+                defaultValue={selectedAddress?.city ?? ''}
+                key={`city-${selectedAddress?.placeId ?? ''}`}
+              />
             </FormField>
             <FormField label="State" required>
-              <Input name="state" required />
+              <Input
+                name="state"
+                required
+                defaultValue={selectedAddress?.state ?? ''}
+                key={`state-${selectedAddress?.placeId ?? ''}`}
+              />
             </FormField>
             <FormField label="Delivery type">
               <Select name="deliveryType">

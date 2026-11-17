@@ -14,6 +14,7 @@ import {
   type BusinessCategory,
   type Settlement,
 } from './api';
+import { AddressSearch } from '../../components/shared/address-search';
 
 export function BusinessWorkspace() {
   const { session } = useAuth();
@@ -24,6 +25,10 @@ export function BusinessWorkspace() {
   const [profile, setProfile] = useState<Record<string, unknown>>({});
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState('');
+  const [address, setAddress] = useState('');
+  const [city, setCity] = useState('');
+  const [state, setState] = useState('');
+  const [addressSelected, setAddressSelected] = useState(false);
   useEffect(() => {
     deliveryLinksApi.categories().then(setCategories);
     if (session) {
@@ -31,6 +36,10 @@ export function BusinessWorkspace() {
         .business(session.accessToken)
         .then((data) => {
           setProfile(data.business);
+          setAddress(String(data.business.address ?? ''));
+          setCity(String(data.business.city ?? ''));
+          setState(String(data.business.state ?? ''));
+          setAddressSelected(true);
           setExists(true);
         })
         .catch(() => undefined);
@@ -43,6 +52,12 @@ export function BusinessWorkspace() {
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!session) return;
+    if (!addressSelected) {
+      setMessage(
+        'Search for and select the business address from the suggestions.',
+      );
+      return;
+    }
     const form = new FormData(event.currentTarget);
     setBusy(true);
     setMessage('');
@@ -133,25 +148,36 @@ export function BusinessWorkspace() {
               />
             </FormField>
             <FormField label="Business location" required>
-              <Input
+              <AddressSearch
                 name="address"
                 required
-                autoComplete="street-address"
-                defaultValue={String(profile.address ?? '')}
+                value={address}
+                onChange={(value) => {
+                  setAddressSelected(false);
+                  setAddress(value);
+                }}
+                onSelect={(selected) => {
+                  setAddressSelected(true);
+                  setAddress(selected.formattedAddress);
+                  setCity(selected.city);
+                  setState(selected.state);
+                }}
               />
             </FormField>
             <FormField label="City" required>
               <Input
                 name="city"
                 required
-                defaultValue={String(profile.city ?? '')}
+                value={city}
+                onChange={(event) => setCity(event.target.value)}
               />
             </FormField>
             <FormField label="State" required>
               <Input
                 name="state"
                 required
-                defaultValue={String(profile.state ?? '')}
+                value={state}
+                onChange={(event) => setState(event.target.value)}
               />
             </FormField>
             <FormField label="Building / floor">

@@ -52,6 +52,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/reference/places/autocomplete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["autocompleteAddress"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/reference/places/details": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getAddressDetails"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/auth/register": {
         parameters: {
             query?: never;
@@ -436,6 +468,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/orders/quotes/quick": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["quoteOrderQuick"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/orders/quotes": {
         parameters: {
             query?: never;
@@ -574,6 +622,38 @@ export interface paths {
         get: operations["getWallet"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/wallet/loyalty": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getWalletLoyalty"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/wallet/transactions/statement/email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["emailWalletStatement"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1164,8 +1244,10 @@ export interface components {
             houseAddress?: string;
             state: string;
             city: string;
-            latitude: number;
-            longitude: number;
+            /** @description Optional legacy input; the server resolves coordinates from the address */
+            latitude?: number;
+            /** @description Optional legacy input; the server resolves coordinates from the address */
+            longitude?: number;
             landmark?: string;
             /** Format: binary */
             image?: string;
@@ -1560,6 +1642,48 @@ export interface operations {
                 };
                 content?: never;
             };
+        };
+    };
+    autocompleteAddress: {
+        parameters: {
+            query: {
+                input: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Nigerian address suggestions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getAddressDetails: {
+        parameters: {
+            query: {
+                placeId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Normalized selected address */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Error"];
         };
     };
     register: {
@@ -2157,6 +2281,25 @@ export interface operations {
             default: components["responses"]["Error"];
         };
     };
+    quoteOrderQuick: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Route quote with default parcel placeholders */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Error"];
+        };
+    };
     quoteOrder: {
         parameters: {
             query?: never;
@@ -2398,6 +2541,53 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["WalletEnvelope"];
                 };
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    getWalletLoyalty: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Loyalty preview for wallet checkout */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    emailWalletStatement: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** Format: date-time */
+                    from: string;
+                    /** Format: date-time */
+                    to: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Statement queued or sent */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             default: components["responses"]["Error"];
         };

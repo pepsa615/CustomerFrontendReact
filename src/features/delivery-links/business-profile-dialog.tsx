@@ -1,7 +1,8 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { MapPin, Store } from 'lucide-react';
+import { Store } from 'lucide-react';
 import { Button, Dialog, FormField, Input, Select } from '../../components/ui';
 import { deliveryLinksApi, type BusinessCategory } from './api';
+import { AddressSearch } from '../../components/shared/address-search';
 
 export type BusinessProfileRecord = Record<string, unknown>;
 
@@ -32,12 +33,6 @@ function recordToForm(profile: BusinessProfileRecord) {
   };
 }
 
-function locationLabel(form: typeof emptyForm) {
-  if (form.city && form.state) return `${form.city}, ${form.state}`;
-  if (form.address) return form.address;
-  return '';
-}
-
 export function BusinessProfileDialog({
   open,
   token,
@@ -59,6 +54,7 @@ export function BusinessProfileDialog({
   const [moreOpen, setMoreOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [addressSelected, setAddressSelected] = useState(Boolean(form.address));
 
   useEffect(() => {
     deliveryLinksApi
@@ -89,6 +85,12 @@ export function BusinessProfileDialog({
     setError('');
     if (!form.category || !form.businessName.trim() || !form.address.trim()) {
       setError('Choose a category, business name, and location.');
+      return;
+    }
+    if (!addressSelected) {
+      setError(
+        'Search for and select the business address from the suggestions.',
+      );
       return;
     }
     if (form.category === 'OTHER' && !form.otherCategory.trim()) {
@@ -182,10 +184,20 @@ export function BusinessProfileDialog({
             />
           </FormField>
           <FormField label="Business location" required>
-            <LocationField
+            <AddressSearch
               value={form.address}
-              display={locationLabel(form)}
-              onChange={(address) => patch({ address })}
+              onChange={(address) => {
+                setAddressSelected(false);
+                patch({ address });
+              }}
+              onSelect={(address) => {
+                setAddressSelected(true);
+                patch({
+                  address: address.formattedAddress,
+                  city: address.city,
+                  state: address.state,
+                });
+              }}
             />
           </FormField>
           <button
@@ -223,10 +235,20 @@ export function BusinessProfileDialog({
       >
         <form className="grid gap-4" onSubmit={persist}>
           <FormField label="Full address" required>
-            <Input
+            <AddressSearch
               value={form.address}
-              autoComplete="street-address"
-              onChange={(event) => patch({ address: event.target.value })}
+              onChange={(address) => {
+                setAddressSelected(false);
+                patch({ address });
+              }}
+              onSelect={(address) => {
+                setAddressSelected(true);
+                patch({
+                  address: address.formattedAddress,
+                  city: address.city,
+                  state: address.state,
+                });
+              }}
             />
           </FormField>
           <FormField label="Phone number" required>
@@ -284,33 +306,5 @@ export function BusinessProfileDialog({
         </form>
       </Dialog>
     </>
-  );
-}
-
-function LocationField({
-  value,
-  display,
-  onChange,
-}: {
-  value: string;
-  display: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <div className="relative">
-      <MapPin
-        className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-primary"
-        size={18}
-      />
-      <Input
-        className="h-12 rounded-xl pl-10"
-        placeholder="City, area"
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-      />
-      {display && display !== value ? (
-        <p className="mt-1 text-xs text-muted">{display}</p>
-      ) : null}
-    </div>
   );
 }

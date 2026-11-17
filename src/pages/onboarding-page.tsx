@@ -4,6 +4,7 @@ import { Alert, Button, FormField, Input } from '../components/ui';
 import { AuthCard } from '../features/identity/auth-card';
 import { apiRequest } from '../api/client';
 import { useAuth, type IdentityUser } from '../contexts/auth-context';
+import { AddressSearch } from '../components/shared/address-search';
 type CapturedLocation = {
   latitude: number;
   longitude: number;
@@ -26,6 +27,7 @@ export function Component() {
   const [locating, setLocating] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [addressQuery, setAddressQuery] = useState('');
   useEffect(
     () => () => streamRef.current?.getTracks().forEach((track) => track.stop()),
     [],
@@ -171,37 +173,6 @@ export function Component() {
       setLocating(false);
     }
   }
-  async function resolveAddress(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const data = new FormData(event.currentTarget);
-    const address = String(data.get('address') ?? '').trim();
-    if (!session || address.length < 5) return;
-    setLocating(true);
-    setError('');
-    try {
-      const result = await apiRequest<{
-        latitude: number;
-        longitude: number;
-        accuracyMeters: number;
-      }>('/account/onboarding/location', {
-        method: 'POST',
-        headers: { authorization: `Bearer ${session.accessToken}` },
-        body: JSON.stringify({ address }),
-      });
-      setLocation({
-        latitude: result.latitude,
-        longitude: result.longitude,
-        accuracy: result.accuracyMeters,
-        timestamp: Date.now(),
-      });
-    } catch (cause) {
-      setError(
-        cause instanceof Error ? cause.message : 'Location lookup failed',
-      );
-    } finally {
-      setLocating(false);
-    }
-  }
   async function submit() {
     if (!selfie || !location || !session) return;
     setLoading(true);
@@ -298,24 +269,28 @@ export function Component() {
           Use current location
         </Button>
         {showManualLocation && !location ? (
-          <form className="grid gap-3" onSubmit={resolveAddress}>
+          <div className="grid gap-3">
             <Alert>
               Automatic location is unavailable. Enter your current street
               address and PEPSA will securely resolve it through Google Maps.
             </Alert>
             <FormField label="Current address">
-              <Input
-                name="address"
-                autoComplete="street-address"
-                placeholder="Street, city, state, country"
-                minLength={5}
-                required
+              <AddressSearch
+                value={addressQuery}
+                onChange={setAddressQuery}
+                onSelect={(address) => {
+                  setAddressQuery(address.formattedAddress);
+                  setLocation({
+                    latitude: address.latitude,
+                    longitude: address.longitude,
+                    accuracy: 30,
+                    timestamp: Date.now(),
+                  });
+                  setShowManualLocation(false);
+                }}
               />
             </FormField>
-            <Button type="submit" variant="secondary" loading={locating}>
-              Find my location
-            </Button>
-          </form>
+          </div>
         ) : null}
         {location ? (
           <Alert tone="success">
