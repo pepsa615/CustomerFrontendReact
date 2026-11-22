@@ -202,109 +202,113 @@ export function Component() {
     }
   }
   return (
-    <AuthCard
-      title="Verify your identity"
-      description="A one-time security check is required before your first transfer or bill payment. It takes about two minutes."
-    >
-      <div className="grid gap-5">
-        {error ? <Alert tone="danger">{error}</Alert> : null}
-        {selfiePreview ? (
-          <img
-            src={selfiePreview}
-            alt="Captured selfie preview"
-            className="aspect-[4/3] w-full rounded-2xl bg-surface-muted object-cover"
-          />
-        ) : (
-          <video
-            ref={videoRef}
-            muted
-            playsInline
-            className="aspect-[4/3] w-full rounded-2xl bg-surface-muted object-cover"
-          />
-        )}
-        {selfie ? (
-          <Button
-            variant="secondary"
-            onClick={() => {
-              setSelfie(null);
-              window.setTimeout(() => void enableCamera(), 0);
-            }}
-          >
-            Retake selfie
-          </Button>
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Button variant="secondary" onClick={enableCamera}>
-              Enable camera
-            </Button>
+    <div className="mx-auto w-full min-w-0 max-w-xl px-4 py-6 sm:px-6 sm:py-8 lg:px-0">
+      <AuthCard
+        title="Verify your identity"
+        description="A one-time security check is required before your first transfer or bill payment. It takes about two minutes."
+      >
+        <div className="grid min-w-0 gap-5 overflow-hidden">
+          {error ? <Alert tone="danger">{error}</Alert> : null}
+          {selfiePreview ? (
+            <img
+              src={selfiePreview}
+              alt="Captured selfie preview"
+              className="aspect-[4/3] max-h-[min(48dvh,30rem)] w-full rounded-2xl bg-surface-muted object-cover"
+            />
+          ) : (
+            <video
+              ref={videoRef}
+              muted
+              playsInline
+              className="aspect-[4/3] max-h-[min(48dvh,30rem)] w-full rounded-2xl bg-surface-muted object-cover"
+            />
+          )}
+          {selfie ? (
             <Button
               variant="secondary"
-              disabled={!cameraReady}
-              onClick={capture}
+              onClick={() => {
+                setSelfie(null);
+                window.setTimeout(() => void enableCamera(), 0);
+              }}
             >
-              Capture selfie
+              Retake selfie
             </Button>
-          </div>
-        )}
-        <FormField label="Or choose a selfie image">
-          <Input
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            capture="user"
-            onChange={(event) => {
-              const file = event.target.files?.[0] ?? null;
-              setSelfie(file);
-              if (file) {
-                streamRef.current?.getTracks().forEach((track) => track.stop());
-                streamRef.current = null;
-                setCameraReady(false);
-              }
-            }}
-          />
-        </FormField>
-        {selfie ? (
-          <Alert tone="success">Selfie ready: {selfie.name}</Alert>
-        ) : null}
-        <Button variant="secondary" loading={locating} onClick={locate}>
-          Use current location
-        </Button>
-        {showManualLocation && !location ? (
-          <div className="grid gap-3">
-            <Alert>
-              Automatic location is unavailable. Enter your current street
-              address and PEPSA will securely resolve it through Google Maps.
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Button variant="secondary" onClick={enableCamera}>
+                Enable camera
+              </Button>
+              <Button
+                variant="secondary"
+                disabled={!cameraReady}
+                onClick={capture}
+              >
+                Capture selfie
+              </Button>
+            </div>
+          )}
+          <FormField label="Or choose a selfie image">
+            <Input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              capture="user"
+              onChange={(event) => {
+                const file = event.target.files?.[0] ?? null;
+                setSelfie(file);
+                if (file) {
+                  streamRef.current
+                    ?.getTracks()
+                    .forEach((track) => track.stop());
+                  streamRef.current = null;
+                  setCameraReady(false);
+                }
+              }}
+            />
+          </FormField>
+          {selfie ? (
+            <Alert tone="success">Selfie ready: {selfie.name}</Alert>
+          ) : null}
+          <Button variant="secondary" loading={locating} onClick={locate}>
+            Use current location
+          </Button>
+          {showManualLocation && !location ? (
+            <div className="grid gap-3">
+              <Alert>
+                Automatic location is unavailable. Enter your current street
+                address and PEPSA will securely resolve it through Google Maps.
+              </Alert>
+              <FormField label="Current address">
+                <AddressSearch
+                  value={addressQuery}
+                  onChange={setAddressQuery}
+                  onSelect={(address) => {
+                    setAddressQuery(address.formattedAddress);
+                    setLocation({
+                      latitude: address.latitude,
+                      longitude: address.longitude,
+                      accuracy: 30,
+                      timestamp: Date.now(),
+                    });
+                    setShowManualLocation(false);
+                  }}
+                />
+              </FormField>
+            </div>
+          ) : null}
+          {location ? (
+            <Alert tone="success">
+              Location captured with ±{Math.round(location.accuracy)}m accuracy.
             </Alert>
-            <FormField label="Current address">
-              <AddressSearch
-                value={addressQuery}
-                onChange={setAddressQuery}
-                onSelect={(address) => {
-                  setAddressQuery(address.formattedAddress);
-                  setLocation({
-                    latitude: address.latitude,
-                    longitude: address.longitude,
-                    accuracy: 30,
-                    timestamp: Date.now(),
-                  });
-                  setShowManualLocation(false);
-                }}
-              />
-            </FormField>
-          </div>
-        ) : null}
-        {location ? (
-          <Alert tone="success">
-            Location captured with ±{Math.round(location.accuracy)}m accuracy.
-          </Alert>
-        ) : null}
-        <Button
-          loading={loading}
-          disabled={!selfie || !location || !session}
-          onClick={submit}
-        >
-          Complete verification
-        </Button>
-      </div>
-    </AuthCard>
+          ) : null}
+          <Button
+            loading={loading}
+            disabled={!selfie || !location || !session}
+            onClick={submit}
+          >
+            Complete verification
+          </Button>
+        </div>
+      </AuthCard>
+    </div>
   );
 }
