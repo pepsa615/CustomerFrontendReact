@@ -468,6 +468,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/orders/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["getOrderOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/orders/media": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["uploadOrderMedia"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/orders/quotes/quick": {
         parameters: {
             query?: never;
@@ -1481,22 +1513,51 @@ export interface components {
         QuoteOrderRequest: {
             /** @enum {string} */
             deliveryType: "last_mile" | "interstate";
-            mobilityMethod: string;
+            mobilityMethod?: string;
             pickup: components["schemas"]["QuoteLocation"];
             delivery: components["schemas"]["QuoteLocation"];
             /** Format: date-time */
             scheduledAt?: string;
+            returnOrder?: boolean;
+            termsAccepted?: boolean;
+            /** Format: uuid */
+            packageImageAssetId?: string;
             parcel: {
                 category: string;
                 description?: string;
                 weightKg?: number;
                 handling: string;
+                insuranceConsent?: boolean;
                 dimensionsCm?: {
                     length: number;
                     width: number;
                     height: number;
                 };
             };
+        };
+        QuickQuoteRequest: {
+            /** @enum {string} */
+            mobilityMethod?: "motorcycle" | "car" | "van";
+            pickup: components["schemas"]["QuickQuoteLocation"];
+            delivery: components["schemas"]["QuickQuoteLocation"];
+            /** Format: date-time */
+            scheduledAt?: string;
+            returnOrder?: boolean;
+            /** @enum {boolean} */
+            termsAccepted: true;
+            /** Format: uuid */
+            packageImageAssetId?: string;
+            parcel: {
+                /** @enum {string} */
+                category: "Food and essentials" | "Pharmaceutical item" | "Mail and small parcel" | "Laundry and clothing" | "Electronics and gadgets" | "Large item and others";
+            };
+        };
+        QuickQuoteLocation: {
+            address: string;
+            city: string;
+            state: string;
+            country: string;
+            landmark?: string;
         };
         QuoteLocation: {
             address: string;
@@ -1515,18 +1576,23 @@ export interface components {
             requestId: string;
         };
         /** @enum {string} */
-        OrderStatus: "QUOTED" | "PAYMENT_PROCESSING" | "PENDING" | "PAIRED" | "PICKUP" | "IN_TRANSIT" | "DELIVERED" | "COMPLETED" | "CANCELLATION_PROCESSING" | "CANCELLED" | "FAILED";
+        OrderStatus: "DRAFT" | "QUOTED" | "PAYMENT_PROCESSING" | "PENDING" | "PAIRED" | "PICKUP" | "IN_TRANSIT" | "DELIVERED" | "COMPLETED" | "CANCELLATION_PROCESSING" | "CANCELLED" | "FAILED";
         Order: {
             id: string;
             status: components["schemas"]["OrderStatus"];
             /** @enum {string} */
             paymentStatus: "UNPAID" | "PROCESSING" | "PAID" | "FAILED" | "REFUNDED";
             deliveryType: string;
-            mobilityMethod: string;
+            mobilityMethod?: string;
+            /** @enum {string} */
+            orderKind: "STANDARD" | "LARGE_COURIER";
             pickup: components["schemas"]["Address"];
             delivery: components["schemas"]["Address"];
             parcel: {
                 category: string;
+                name?: string;
+                handling?: string;
+                insuranceConsent?: boolean;
                 weightKg?: number;
                 dimensionsCm?: {
                     length?: number;
@@ -1534,6 +1600,11 @@ export interface components {
                     height?: number;
                 };
             };
+            /** Format: date-time */
+            scheduledAt?: string;
+            returnOrder?: boolean;
+            /** Format: uuid */
+            packageImageAssetId?: string;
             amount: components["schemas"]["Money"];
             /** Format: date-time */
             quoteExpiresAt?: string;
@@ -2281,7 +2352,7 @@ export interface operations {
             default: components["responses"]["Error"];
         };
     };
-    quoteOrderQuick: {
+    getOrderOptions: {
         parameters: {
             query?: never;
             header?: never;
@@ -2289,6 +2360,55 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Canonical order categories */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    uploadOrderMedia: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": {
+                    /** Format: binary */
+                    photo: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Private package photo accepted */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            default: components["responses"]["Error"];
+        };
+    };
+    quoteOrderQuick: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuickQuoteRequest"];
+            };
+        };
         responses: {
             /** @description Route quote with default parcel placeholders */
             201: {

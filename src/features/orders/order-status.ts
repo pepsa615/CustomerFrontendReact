@@ -1,6 +1,7 @@
 import type { OrderStatus } from './api';
 
 const labels: Record<OrderStatus, string> = {
+  DRAFT: 'Draft',
   QUOTED: 'Draft',
   PAYMENT_PROCESSING: 'Processing',
   PENDING: 'Pending',
@@ -21,7 +22,8 @@ export function orderStatusLabel(status: OrderStatus) {
 export function orderStatusTone(status: OrderStatus) {
   if (['DELIVERED', 'COMPLETED'].includes(status)) return 'text-success';
   if (['PENDING', 'QUOTED'].includes(status)) return 'text-warning';
-  if (['PAIRED', 'PICKUP', 'IN_TRANSIT'].includes(status)) return 'text-primary';
+  if (['PAIRED', 'PICKUP', 'IN_TRANSIT'].includes(status))
+    return 'text-primary';
   if (status === 'CANCELLED' || status === 'FAILED') return 'text-danger';
   return 'text-muted';
 }
