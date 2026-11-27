@@ -1537,7 +1537,7 @@ export interface components {
         };
         QuickQuoteRequest: {
             /** @enum {string} */
-            mobilityMethod?: "motorcycle" | "car" | "van";
+            mobilityMethod?: "motorcycle" | "bicycle" | "tricycle" | "car" | "van" | "truck" | "large_truck";
             pickup: components["schemas"]["QuickQuoteLocation"];
             delivery: components["schemas"]["QuickQuoteLocation"];
             /** Format: date-time */
