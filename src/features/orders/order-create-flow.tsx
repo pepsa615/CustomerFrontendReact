@@ -96,6 +96,7 @@ export function OrderCreateFlow({
   const [returnOrder, setReturnOrder] = useState(false);
   const [photoName, setPhotoName] = useState('');
   const [pin, setPin] = useState('');
+  const [quotedSignature, setQuotedSignature] = useState('');
   const [quick, setQuick] = useState<QuickQuoteInput>({
     mobilityMethod: initialRoute?.mobilityMethod ?? 'motorcycle',
     pickup: { ...blankPlace, ...initialRoute?.pickup },
@@ -134,8 +135,10 @@ export function OrderCreateFlow({
       .then((nextOptions) => {
         setOptions(nextOptions);
         setQuick((current) => {
-          const allowed = nextOptions.vehiclesByCategory?.[current.parcel.category];
-          return allowed?.length && !allowed.includes(current.mobilityMethod ?? '')
+          const allowed =
+            nextOptions.vehiclesByCategory?.[current.parcel.category];
+          return allowed?.length &&
+            !allowed.includes(current.mobilityMethod ?? '')
             ? { ...current, mobilityMethod: allowed[0] }
             : current;
         });
@@ -161,6 +164,8 @@ export function OrderCreateFlow({
     terms &&
     (!date || time) &&
     (interstate || quick.mobilityMethod);
+  const quoteSignature = JSON.stringify({ quick, date, time, returnOrder });
+  const quoteIsCurrent = Boolean(order && quotedSignature === quoteSignature);
   const chooseAddress = (
     kind: 'pickup' | 'delivery',
     address: {
@@ -198,6 +203,7 @@ export function OrderCreateFlow({
       };
       const quoted = await orderApi.quickQuote(token, payload);
       setOrder(quoted);
+      setQuotedSignature(quoteSignature);
       setDetails((current) => ({
         ...current,
         deliveryType: quoted.deliveryType,
@@ -206,7 +212,6 @@ export function OrderCreateFlow({
         delivery: { ...current.delivery, ...payload.delivery },
         parcel: { ...current.parcel, category: payload.parcel.category },
       }));
-      setStep(1);
     } catch (cause) {
       setError(
         cause instanceof Error ? cause.message : 'Could not get a quote',
@@ -302,7 +307,8 @@ export function OrderCreateFlow({
                   ...quick,
                   parcel: { category },
                   mobilityMethod:
-                    allowed?.length && !allowed.includes(quick.mobilityMethod ?? '')
+                    allowed?.length &&
+                    !allowed.includes(quick.mobilityMethod ?? '')
                       ? allowed[0]
                       : quick.mobilityMethod,
                 });
@@ -402,14 +408,18 @@ export function OrderCreateFlow({
               prohibited items in the package.
             </span>
           </label>
-          <Button
-            className="h-14 text-lg"
-            disabled={!routeReady}
-            loading={busy}
-            onClick={() => void getQuote()}
-          >
-            Continue
-          </Button>
+          {quoteIsCurrent && order ? (
+            <QuotePreview order={order} onNext={() => setStep(1)} />
+          ) : (
+            <Button
+              className="h-14 text-lg"
+              disabled={!routeReady}
+              loading={busy}
+              onClick={() => void getQuote()}
+            >
+              Get quote
+            </Button>
+          )}
         </Card>
       ) : null}
       {step === 1 ? (
@@ -632,6 +642,58 @@ function VehiclePicker({
         })}
       </div>
     </fieldset>
+  );
+}
+function QuotePreview({ order, onNext }: { order: Order; onNext: () => void }) {
+  return (
+    <section
+      className="grid gap-4 rounded-2xl border border-primary/20 bg-primary-soft p-5"
+      aria-live="polite"
+    >
+      <div className="flex items-end justify-between gap-4">
+        <div>
+          <p className="text-sm text-muted">Estimated delivery fee</p>
+          <p className="mt-1 text-3xl font-bold text-primary">
+            {formatMoney(order.amount)}
+          </p>
+        </div>
+        <p className="text-right text-sm font-semibold capitalize">
+          {order.deliveryType === 'last_mile'
+            ? 'Last-mile delivery'
+            : 'Interstate delivery'}
+          {order.mobilityMethod ? (
+            <>
+              <br />
+              {order.mobilityMethod.replaceAll('_', ' ')}
+            </>
+          ) : null}
+        </p>
+      </div>
+      <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-muted">
+        <span>{order.distanceKm ?? '—'} km</span>
+        <span>
+          {order.durationSeconds
+            ? `${Math.ceil(order.durationSeconds / 60)} mins`
+            : 'ETA unavailable'}
+        </span>
+        {order.quoteExpiresAt ? (
+          <span>
+            Valid until{' '}
+            {new Date(order.quoteExpiresAt).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+          </span>
+        ) : null}
+      </div>
+      <p className="text-xs text-muted">
+        Review this estimate before continuing. Changing any delivery detail
+        will require a new quote.
+      </p>
+      <Button className="h-14 text-lg" onClick={onNext}>
+        Next: Pickup details
+      </Button>
+    </section>
   );
 }
 function ContactScreen({
