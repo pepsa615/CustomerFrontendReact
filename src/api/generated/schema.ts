@@ -1553,6 +1553,7 @@ export interface components {
             };
         };
         QuickQuoteLocation: {
+            placeId?: string;
             address: string;
             city: string;
             state: string;
@@ -1560,6 +1561,7 @@ export interface components {
             landmark?: string;
         };
         QuoteLocation: {
+            placeId?: string;
             address: string;
             city: string;
             state: string;

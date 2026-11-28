@@ -164,6 +164,7 @@ export function OrderCreateFlow({
   const chooseAddress = (
     kind: 'pickup' | 'delivery',
     address: {
+      placeId: string;
       formattedAddress: string;
       city: string;
       state: string;
@@ -175,6 +176,7 @@ export function OrderCreateFlow({
       ...current,
       [kind]: {
         ...current[kind],
+        placeId: address.placeId,
         address: address.formattedAddress,
         city: address.city,
         state: address.state,
@@ -569,6 +571,7 @@ function AddressField({
   value: string;
   onChange: (value: string) => void;
   onSelect: (address: {
+    placeId: string;
     formattedAddress: string;
     city: string;
     state: string;

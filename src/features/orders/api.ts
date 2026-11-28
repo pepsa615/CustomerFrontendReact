@@ -68,6 +68,7 @@ export type QuickQuoteInput = {
   deliveryType?: string;
   mobilityMethod?: string;
   pickup: {
+    placeId?: string;
     address: string;
     city: string;
     state: string;
@@ -75,6 +76,7 @@ export type QuickQuoteInput = {
     landmark?: string;
   };
   delivery: {
+    placeId?: string;
     address: string;
     city: string;
     state: string;
@@ -91,6 +93,7 @@ export type OrderDetailsPatch = Partial<
   Pick<QuoteInput, 'pickup' | 'delivery' | 'parcel'>
 > & { pickupLandmark?: string; deliveryLandmark?: string };
 type ProviderAddress = {
+  placeId?: string;
   address: string;
   city: string;
   state: string;
